@@ -6,7 +6,7 @@ using UnityEngine;
 public class Cylinder : MeshTypes.Generator
 {
 
-    // we can change these
+    // we can modify these two
     private readonly int HEIGHT = 10;
     private readonly int RADIUS = 3;
 
@@ -23,13 +23,15 @@ public class Cylinder : MeshTypes.Generator
     {
         return new Vector3(
             RADIUS * Mathf.Cos(Mathf.Deg2Rad * (x * size / (float)numQuads)),
-            y * (HEIGHT / (float)numQuads),
+            y * (HEIGHT / (float)numQuads) - HEIGHT / 2f,
             RADIUS * Mathf.Sin(Mathf.Deg2Rad * (x * size / (float)numQuads))
         );
     }
 
     public override Vector3 Normal(int x, int y)
     {
-        return Vector3.up;
+        // todo: do the actual math here instead of just calling Vertex()
+        Vector3 vertex = Vertex(x, y);
+        return (vertex - new Vector3(0, vertex.y, 0)).normalized;
     }
 }

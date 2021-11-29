@@ -6,7 +6,7 @@ using UnityEngine;
 public class Plane : MeshTypes.Generator
 {
     public static SliderWithEcho.Values Resolution = new SliderWithEcho.Values(2, 20, 10);
-    public static SliderWithEcho.Values Size = new SliderWithEcho.Values(1, 10, 5);
+    public static SliderWithEcho.Values Size = new SliderWithEcho.Values(1, 10, 10);
 
     public Plane(int numVertices, int size)
     {
@@ -17,9 +17,9 @@ public class Plane : MeshTypes.Generator
     public override Vector3 Vertex(int x, int y)
     {
         return new Vector3(
-            x * size / (float)numQuads,
+            x * size / (float)numQuads - size / 2f,
             0,
-            y * size / (float)numQuads
+            y * size / (float)numQuads - size / 2f
         );
     }
 

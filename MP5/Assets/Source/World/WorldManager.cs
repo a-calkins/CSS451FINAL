@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class WorldManager : MonoBehaviour
 {
-    public EditableMesh mesh;
+    public EditableMesh obj;
 
     // ugly :X these Notifiers are just weird wrappers for delegates
     public StringNotifier dropdown;
@@ -28,42 +28,45 @@ public class WorldManager : MonoBehaviour
     {
         dropdown.NewValue += delegate (string name)
         {
-            ChangeSliders(name);
-            ChangeMesh(name, resolution.current, size.current);
+            SetSliders(name);
+            SetMesh(name, resolution.current, size.current);
         };
         resolution.NewValue += delegate (float value)
         {
-            ChangeMesh(mesh.name, value, size.current);
-            mesh.Resolution((int)value);
+            SetMesh(obj.name, value, size.current);
+            obj.Resolution((int)value);
         };
         size.NewValue += delegate (float value)
         {
-            ChangeMesh(mesh.name, resolution.current, value);
-            mesh.Size((int)value);
+            SetMesh(obj.name, resolution.current, value);
+            obj.Size((int)value);
         };
-        ChangeMesh("mesh", resolution.current, size.current);
+
+        // initialize 
+        SetSliders("mesh");
+        SetMesh("mesh", resolution.current, size.current);
     }
 
-    private void ChangeMesh(string name, float resolution, float length)
+    private void SetMesh(string name, float resolution, float length)
     {
         name = name.ToLowerInvariant();  // make the name case-insensitive
-        mesh.ChangeMesh(
+        obj.SetMesh(
             MeshTypes.Generate(
                 name,
                 (int)resolution,
                 (int)length
             )
         );
-        mesh.name = name;
+        obj.name = name;
     }
 
-    private void ChangeSliders(string name)
+    private void SetSliders(string name)
     {
         name = name.ToLowerInvariant();  // make the name case-insensitive
         var resolution = MeshTypes.GetResolutionValues(name);
         var size = MeshTypes.GetSizeValues(name);
 
-        mesh.ChangeSliders(resolution, size);
+        obj.ChangeSliders(resolution, size);
         resolutionSlider.ChangeSilently(resolution);
         sizeSlider.ChangeSilently(size);
     }

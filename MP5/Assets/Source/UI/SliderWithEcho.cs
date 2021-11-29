@@ -98,7 +98,7 @@ public class SliderWithEcho : MonoBehaviour
 
     public void ChangeSilently(float min, float max, float v)
     {
-        currentlyChangingSilently = true;
+        currentlyChangingSilently = true;  // tells SliderValueChange() to keep this on the DL
         slider.minValue = min;
         slider.maxValue = max;
         slider.value = v;

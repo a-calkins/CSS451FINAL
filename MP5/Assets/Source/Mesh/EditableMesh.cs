@@ -21,7 +21,7 @@ public class EditableMesh : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
     }
 
-    private void ChangeMesh(Vector3[] vertices, int[] triangles, Vector3[] normals)
+    private void SetMesh(Vector3[] vertices, int[] triangles, Vector3[] normals)
     {
         meshFilter.mesh.Clear();
         meshFilter.mesh.SetVertices(vertices);
@@ -38,9 +38,9 @@ public class EditableMesh : MonoBehaviour
         meshFilter.mesh.SetNormals(normals);
     }
 
-    public void ChangeMesh(MeshTypes.Mesh mesh)
+    public void SetMesh(MeshTypes.Mesh mesh)
     {
-        ChangeMesh(mesh.vertices, mesh.triangles, mesh.normals);
+        SetMesh(mesh.vertices, mesh.triangles, mesh.normals);
     }
 
     public void ChangeSliders(SliderWithEcho.Values resolution, SliderWithEcho.Values size)

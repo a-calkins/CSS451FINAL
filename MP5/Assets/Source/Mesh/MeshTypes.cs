@@ -90,7 +90,7 @@ public class MeshTypes
         }
     }
 
-    // get the bounds & last saved value of a mesh type's resolution slider
+    // get the bounds & last saved value of a mesh type's Resolution slider
     public static SliderWithEcho.Values GetResolutionValues(string name)
     {
         return name switch
@@ -101,7 +101,7 @@ public class MeshTypes
         };
     }
 
-    // get the bounds & last saved value of a mesh type's size slider
+    // get the bounds & last saved value of a mesh type's Size slider
     // (size = width/height for plane and rotation for cylinder)
     public static SliderWithEcho.Values GetSizeValues(string name)
     {
@@ -113,7 +113,7 @@ public class MeshTypes
         };
     }
 
-    // return a new mesh (vertices triangles normals) of the requested type
+    // return a new mesh (vertices, triangles, normals) of the requested type
     // with the requested resolution & size
     public static Mesh Generate(string name, int resolution, int size)
     {
