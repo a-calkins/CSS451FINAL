@@ -5,7 +5,7 @@ using UnityEngine;
 public class WorldNotifier<T> : MonoBehaviour
 {
     public delegate void Notify(T val);
-    public event Notify Notifier;
+    public event Notify NewValue;
 
     public T current { get; private set; }
 
@@ -17,9 +17,9 @@ public class WorldNotifier<T> : MonoBehaviour
     public void UpdateValue(T value)
     {
         UpdateValueSilently(value);
-        if (Notifier != null)
+        if (NewValue != null)
         {
-            Notifier(value);
+            NewValue(value);
         }
     }
 }

@@ -6,27 +6,23 @@ using UnityEngine;
 [RequireComponent(typeof(MeshRenderer))]
 public class EditableMesh : MonoBehaviour
 {
-    private MeshFilter meshFilter;
-
     // turns off half the faces to make the vertices easier to see
     public bool debugVertices;
+    private MeshFilter meshFilter;
+    private MeshPresets.SliderValues resolution;
+    private MeshPresets.SliderValues size;
     new public string name;
 
-    // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
+        // if we do this in Start instead of Awake, meshFilter will be null
+        // the first time UpdateMesh() is called from other classes' Start
+        // methods
         meshFilter = GetComponent<MeshFilter>();
-        Debug.Assert(meshFilter != null);
     }
 
-    public void UpdateMesh(Vector3[] vertices, int[] triangles, Vector3[] normals)
+    private void ChangeMesh(Vector3[] vertices, int[] triangles, Vector3[] normals)
     {
-        if (meshFilter == null)
-        {
-            // this literally shouldn't be possible idk why it's happening
-            Debug.Log("MeshFilter was null");
-            meshFilter = GetComponent<MeshFilter>();
-        }
         meshFilter.mesh.Clear();
         meshFilter.mesh.SetVertices(vertices);
         if (debugVertices)
@@ -40,5 +36,32 @@ public class EditableMesh : MonoBehaviour
         }
         meshFilter.mesh.SetTriangles(triangles, 0);
         meshFilter.mesh.SetNormals(normals);
+    }
+
+    public void ChangeMesh(MeshPresets.Mesh mesh)
+    {
+        ChangeMesh(mesh.vertices, mesh.triangles, mesh.normals);
+    }
+
+    public void ChangeSliders(MeshPresets.SliderValues resolution, MeshPresets.SliderValues size)
+    {
+        this.resolution = resolution;
+        this.size = size;
+    }
+
+    public void Resolution(int val)
+    {
+        if (resolution != null)
+        {
+            resolution.value = val;
+        }
+    }
+
+    public void Size(int val)
+    {
+        if (size != null)
+        {
+            size.value = val;
+        }
     }
 }

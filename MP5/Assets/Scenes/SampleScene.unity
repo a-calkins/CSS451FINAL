@@ -1671,7 +1671,7 @@ MonoBehaviour:
   dropdown: {fileID: 504620717}
   textureTransform: {fileID: 0}
   resolution: {fileID: 1430818360}
-  length: {fileID: 426148885}
+  size: {fileID: 426148885}
 --- !u!114 &1586883674 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 114699381412734440, guid: 0063ea66f79c76c4190ea329cb8d79f0, type: 3}
@@ -1917,7 +1917,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8a82ed98caf27a4d8698e8b03780ddc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debugVertices: 0
+  debugVertices: 1
   name: 
 --- !u!33 &1772170520
 MeshFilter:

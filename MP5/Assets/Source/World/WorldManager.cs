@@ -13,35 +13,58 @@ public class WorldManager : MonoBehaviour
     // (we could still keep track of different meshes' resolutions separately,
     // just without showing two sliders at all times?)
     public FloatNotifier resolution;
+    private SliderWithEcho resolutionSlider;
     // we can control the plane's size too, why not
-    public FloatNotifier length;
+    public FloatNotifier size;
+    private SliderWithEcho sizeSlider;
 
-    // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
-        dropdown.Notifier += delegate (string name)
-        {
-            MakeNewMesh(name, resolution.current, length.current);
-        };
-        resolution.Notifier += delegate (float value)
-        {
-            MakeNewMesh(mesh.name, value, length.current);
-        };
-        length.Notifier += delegate (float value)
-        {
-            MakeNewMesh(mesh.name, resolution.current, value);
-        };
-        MakeNewMesh("mesh", resolution.current, length.current);
+        resolutionSlider = resolution.GetComponent<SliderWithEcho>();
+        sizeSlider = size.GetComponent<SliderWithEcho>();
     }
 
-    private void MakeNewMesh(string name, float resolution, float length)
+    void Start()
     {
-        var generated = StaticMeshGenerator.Generate(
-            name.ToLowerInvariant(),
-            (int)resolution,
-            (int)length
+        dropdown.NewValue += delegate (string name)
+        {
+            ChangeMesh(name, resolution.current, size.current);
+            ChangeSliders(name);
+        };
+        resolution.NewValue += delegate (float value)
+        {
+            ChangeMesh(mesh.name, value, size.current);
+            mesh.Resolution((int)value);
+        };
+        size.NewValue += delegate (float value)
+        {
+            ChangeMesh(mesh.name, resolution.current, value);
+            mesh.Size((int)value);
+        };
+        ChangeMesh("mesh", resolution.current, size.current);
+    }
+
+    private void ChangeMesh(string name, float resolution, float length)
+    {
+        name = name.ToLowerInvariant();  // make the name case-insensitive
+        mesh.ChangeMesh(
+            MeshPresets.Generate(
+                name,
+                (int)resolution,
+                (int)length
+            )
         );
-        mesh.UpdateMesh(generated.vertices, generated.triangles, generated.normals);
         mesh.name = name;
+    }
+
+    private void ChangeSliders(string name)
+    {
+        name = name.ToLowerInvariant();  // make the name case-insensitive
+        var resolution = MeshPresets.GetResolutionValues(name);
+        var size = MeshPresets.GetSizeValues(name);
+
+        mesh.ChangeSliders(resolution, size);
+        resolutionSlider.InitSliderRange(resolution.min, resolution.max, resolution.value);
+        sizeSlider.InitSliderRange(size.min, size.max, size.value);
     }
 }
