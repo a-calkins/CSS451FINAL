@@ -1,1 +1,1 @@
-public class FloatNotifier : WorldNotifier<float> { }
+public class FloatNotifier : Notifier<float> { }

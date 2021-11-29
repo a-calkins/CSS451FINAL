@@ -3,7 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MeshPresets
+// a bit overwrought but it works !
+public class MeshTypes
 {
 
     // wraps the arrays of vertices, triangles, and normals
@@ -24,21 +25,6 @@ public class MeshPresets
         }
     }
 
-    // lets individual mesh classes store their resolution & scale stuff statically
-    public class SliderValues
-    {
-        public int min;
-        public int max;
-        public int value;
-
-        public SliderValues(int min, int max, int value)
-        {
-            this.min = min;
-            this.max = max;
-            this.value = value;
-        }
-    }
-
     // individual mesh generators (plane, cylinder, possibly others for extra
     // credit?) inherit from this class
     // + re extra credit: i guess projecting 2D x & y onto 3D like this is a
@@ -51,7 +37,7 @@ public class MeshPresets
         protected int numQuads { get { return numVertices - 1; } }
         protected int size;
 
-        public static SliderValues sliderValues;
+        public static SliderWithEcho.Values sliderValues;
 
         public abstract Vector3 Vertex(int x, int y);
         public abstract Vector3 Normal(int x, int y);
@@ -104,7 +90,8 @@ public class MeshPresets
         }
     }
 
-    public static SliderValues GetResolutionValues(string name)
+    // get the bounds & last saved value of a mesh type's resolution slider
+    public static SliderWithEcho.Values GetResolutionValues(string name)
     {
         return name switch
         {
@@ -114,7 +101,9 @@ public class MeshPresets
         };
     }
 
-    public static SliderValues GetSizeValues(string name)
+    // get the bounds & last saved value of a mesh type's size slider
+    // (size = width/height for plane and rotation for cylinder)
+    public static SliderWithEcho.Values GetSizeValues(string name)
     {
         return name switch
         {
@@ -124,12 +113,14 @@ public class MeshPresets
         };
     }
 
-    public static Mesh Generate(string name, int resolution, int length)
+    // return a new mesh (vertices triangles normals) of the requested type
+    // with the requested resolution & size
+    public static Mesh Generate(string name, int resolution, int size)
     {
         return name switch
         {
-            "mesh" => Generate(new Plane(resolution, length)),
-            "cylinder" => Generate(new Cylinder(resolution, length)),
+            "mesh" => Generate(new Plane(resolution, size)),
+            "cylinder" => Generate(new Cylinder(resolution, size)),
             _ => Mesh.EMPTY
         };
     }

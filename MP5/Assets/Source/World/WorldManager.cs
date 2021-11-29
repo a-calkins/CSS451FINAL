@@ -28,8 +28,8 @@ public class WorldManager : MonoBehaviour
     {
         dropdown.NewValue += delegate (string name)
         {
-            ChangeMesh(name, resolution.current, size.current);
             ChangeSliders(name);
+            ChangeMesh(name, resolution.current, size.current);
         };
         resolution.NewValue += delegate (float value)
         {
@@ -48,7 +48,7 @@ public class WorldManager : MonoBehaviour
     {
         name = name.ToLowerInvariant();  // make the name case-insensitive
         mesh.ChangeMesh(
-            MeshPresets.Generate(
+            MeshTypes.Generate(
                 name,
                 (int)resolution,
                 (int)length
@@ -60,11 +60,11 @@ public class WorldManager : MonoBehaviour
     private void ChangeSliders(string name)
     {
         name = name.ToLowerInvariant();  // make the name case-insensitive
-        var resolution = MeshPresets.GetResolutionValues(name);
-        var size = MeshPresets.GetSizeValues(name);
+        var resolution = MeshTypes.GetResolutionValues(name);
+        var size = MeshTypes.GetSizeValues(name);
 
         mesh.ChangeSliders(resolution, size);
-        resolutionSlider.InitSliderRange(resolution.min, resolution.max, resolution.value);
-        sizeSlider.InitSliderRange(size.min, size.max, size.value);
+        resolutionSlider.ChangeSilently(resolution);
+        sizeSlider.ChangeSilently(size);
     }
 }

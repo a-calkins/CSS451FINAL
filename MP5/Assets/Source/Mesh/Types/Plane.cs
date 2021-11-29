@@ -3,10 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Plane : MeshPresets.Generator
+public class Plane : MeshTypes.Generator
 {
-    public static MeshPresets.SliderValues Resolution = new MeshPresets.SliderValues(2, 20, 10);
-    public static MeshPresets.SliderValues Size = new MeshPresets.SliderValues(1, 10, 5);
+    public static SliderWithEcho.Values Resolution = new SliderWithEcho.Values(2, 20, 10);
+    public static SliderWithEcho.Values Size = new SliderWithEcho.Values(1, 10, 5);
 
     public Plane(int numVertices, int size)
     {

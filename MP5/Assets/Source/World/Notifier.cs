@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WorldNotifier<T> : MonoBehaviour
+public class Notifier<T> : MonoBehaviour
 {
     public delegate void Notify(T val);
     public event Notify NewValue;

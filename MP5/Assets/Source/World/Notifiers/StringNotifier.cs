@@ -1,1 +1,1 @@
-public class StringNotifier : WorldNotifier<string> { }
+public class StringNotifier : Notifier<string> { }

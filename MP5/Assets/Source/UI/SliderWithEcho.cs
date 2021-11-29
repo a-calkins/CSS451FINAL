@@ -6,6 +6,22 @@ using UnityEngine.UI;
 [RequireComponent(typeof(FloatNotifier))]
 public class SliderWithEcho : MonoBehaviour
 {
+
+    // lets individual mesh classes store their resolution & scale stuff statically
+    public class Values
+    {
+        public int min;
+        public int max;
+        public int value;
+
+        public Values(int min, int max, int value)
+        {
+            this.min = min;
+            this.max = max;
+            this.value = value;
+        }
+    }
+
     public float min = 1;
     public float max = 10;
     public float initialValue = 5;
@@ -20,6 +36,10 @@ public class SliderWithEcho : MonoBehaviour
     private SliderCallbackDelegate callback = null;
 
     private FloatNotifier notifier;
+
+    // using this to get around the automatic onValueChanged notifier
+    // to avoid creating meshes like 3 times over
+    private bool currentlyChangingSilently;
 
 
     // Use this for initialization
@@ -44,9 +64,16 @@ public class SliderWithEcho : MonoBehaviour
     {
         echo.text = v.ToString(truncate ? "0.0" : "0.0000");
         // Debug.Log("SliderValueChange: " + v);
-        if (callback != null)
-            callback(v);
-        notifier.UpdateValue(v);
+        if (!currentlyChangingSilently)
+        {
+            if (callback != null)
+                callback(v);
+            notifier.UpdateValue(v);
+        }
+        else
+        {
+            notifier.UpdateValueSilently(v);
+        }
     }
 
     public float GetSliderValue()
@@ -67,5 +94,19 @@ public class SliderWithEcho : MonoBehaviour
         slider.minValue = min;
         slider.maxValue = max;
         SetSliderValue(v);
+    }
+
+    public void ChangeSilently(float min, float max, float v)
+    {
+        currentlyChangingSilently = true;
+        slider.minValue = min;
+        slider.maxValue = max;
+        slider.value = v;
+        currentlyChangingSilently = false;
+    }
+
+    public void ChangeSilently(Values slider)
+    {
+        ChangeSilently(slider.min, slider.max, slider.value);
     }
 }

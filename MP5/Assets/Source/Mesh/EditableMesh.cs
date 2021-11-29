@@ -9,8 +9,8 @@ public class EditableMesh : MonoBehaviour
     // turns off half the faces to make the vertices easier to see
     public bool debugVertices;
     private MeshFilter meshFilter;
-    private MeshPresets.SliderValues resolution;
-    private MeshPresets.SliderValues size;
+    private SliderWithEcho.Values resolution;
+    private SliderWithEcho.Values size;
     new public string name;
 
     void Awake()
@@ -38,12 +38,12 @@ public class EditableMesh : MonoBehaviour
         meshFilter.mesh.SetNormals(normals);
     }
 
-    public void ChangeMesh(MeshPresets.Mesh mesh)
+    public void ChangeMesh(MeshTypes.Mesh mesh)
     {
         ChangeMesh(mesh.vertices, mesh.triangles, mesh.normals);
     }
 
-    public void ChangeSliders(MeshPresets.SliderValues resolution, MeshPresets.SliderValues size)
+    public void ChangeSliders(SliderWithEcho.Values resolution, SliderWithEcho.Values size)
     {
         this.resolution = resolution;
         this.size = size;
