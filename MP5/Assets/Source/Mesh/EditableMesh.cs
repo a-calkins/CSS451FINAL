@@ -79,6 +79,9 @@ public class EditableMesh : MonoBehaviour
             controllers[i].transform.parent = this.transform;
 
             controllers[i].transform.GetComponent<MeshRenderer>().enabled = false;
+            for(int j = 0; j < 3; j++) {
+                controllers[i].transform.GetChild(j).GetComponent<Renderer>().enabled = false;
+            }
             visible = false;
         }
     }
@@ -96,6 +99,9 @@ public class EditableMesh : MonoBehaviour
         if(controllers != null && visible) {
             for(int i = 0; i < controllers.Length; i++) {
                 controllers[i].transform.GetComponent<MeshRenderer>().enabled = false;
+                for(int j = 0; j < 3; j++) {
+                    controllers[i].transform.GetChild(j).GetComponent<Renderer>().enabled = false;
+                }
             }
             visible = false;
         }
