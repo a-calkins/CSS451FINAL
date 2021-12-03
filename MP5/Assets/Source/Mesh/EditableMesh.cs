@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
@@ -15,6 +16,7 @@ public class EditableMesh : MonoBehaviour
     //array to hold the controllers (spheres)
     public GameObject[] controllers;
     bool visible;
+
     void Awake()
     {
         // if we do this in Start instead of Awake, meshFilter will be null
@@ -71,13 +73,12 @@ public class EditableMesh : MonoBehaviour
     void InitControllers(Vector3[] vertices) {
         controllers = new GameObject[vertices.Length];
         for(int i = 0; i < vertices.Length; i++) {
-            controllers[i] = GameObject.Instantiate(Resources.Load("Prefabs/Controller") as GameObject);
 
+            controllers[i] = GameObject.Instantiate(Resources.Load("Prefabs/Controller") as GameObject);
             controllers[i].transform.localPosition = vertices[i];
             controllers[i].transform.parent = this.transform;
 
             controllers[i].transform.GetComponent<MeshRenderer>().enabled = false;
-            controllers[i].transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
             visible = false;
         }
     }
@@ -86,7 +87,6 @@ public class EditableMesh : MonoBehaviour
         if(controllers != null && !visible) {
             for(int i = 0; i < controllers.Length; i++) {
                 controllers[i].transform.GetComponent<MeshRenderer>().enabled = true;
-                controllers[i].transform.GetChild(0).GetComponent<MeshRenderer>().enabled = true;
             }
             visible = true;
         }
@@ -96,7 +96,6 @@ public class EditableMesh : MonoBehaviour
         if(controllers != null && visible) {
             for(int i = 0; i < controllers.Length; i++) {
                 controllers[i].transform.GetComponent<MeshRenderer>().enabled = false;
-                controllers[i].transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
             }
             visible = false;
         }
