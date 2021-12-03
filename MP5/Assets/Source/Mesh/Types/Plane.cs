@@ -8,6 +8,11 @@ public class Plane : MeshTypes.Generator
     public static SliderWithEcho.Values Resolution = new SliderWithEcho.Values(2, 20, 10);
     public static SliderWithEcho.Values Size = new SliderWithEcho.Values(1, 10, 10);
 
+    public override bool Symmetry
+    {
+        get { return false; }
+    }
+
     public Plane(int numVertices, int size)
     {
         this.numVertices = numVertices;

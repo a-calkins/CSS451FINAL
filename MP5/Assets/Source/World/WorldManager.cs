@@ -17,12 +17,13 @@ public class WorldManager : MonoBehaviour
     private SliderWithEcho sizeSlider;
 
     //vertex selection and manipulation stuff
-    private GameObject selected, selectedAxis;
+    private Controller selected;
+    private Renderer selectedAxis;
     RaycastHit hitInfo = new RaycastHit();
     Ray ray;
     Color original;
     bool visible;
-    float mouseX = 0, mouseY = 0, dy, dx, tracking = 0.05f;
+    float mouseX = 0, mouseY = 0, dy, dx, tracking = 0.01f;
 
     void Awake()
     {
@@ -82,6 +83,7 @@ public class WorldManager : MonoBehaviour
         // controllers from disappearing (since they inherit obj.visible)
         // should remove this if we can do it 100% within obj instead
         obj.visible = visible;
+        
         if(Input.GetKeyDown(KeyCode.LeftControl))
         {
             visible = true;
@@ -126,17 +128,14 @@ public class WorldManager : MonoBehaviour
             ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out hitInfo))
             {
-                if(hitInfo.collider.tag == "Controller")
+                if(hitInfo.collider.CompareTag("Controller"))
                 {
                     if(selected == null) {
-                        selected = hitInfo.collider.gameObject;
-                        selected.GetComponent<Renderer>().material.SetColor("_Color", Color.black);
-                        for(int i = 0; i < 3; i++) {
-                            selected.transform.GetChild(i).GetComponent<Renderer>().enabled = true;
-                        }
+                        selected = hitInfo.collider.gameObject.GetComponent<Controller>();
+                        selected.Select();
                     }
                     else if(selected != null && hitInfo.collider.gameObject == selected) {
-                        Deselect();
+                        selected.Deselect();
                     }
                     else {
                         SelectNew();
@@ -147,15 +146,9 @@ public class WorldManager : MonoBehaviour
     }
 
     void SelectNew() {
-        selected.GetComponent<Renderer>().material.SetColor("_Color", Color.white);
-        for(int i = 0; i < 3; i++) {
-            selected.transform.GetChild(i).GetComponent<Renderer>().enabled = false;
-        }
-        selected = hitInfo.collider.gameObject;
-        selected.GetComponent<Renderer>().material.SetColor("_Color", Color.black);
-        for(int i = 0; i < 3; i++) {
-            selected.transform.GetChild(i).GetComponent<Renderer>().enabled = true;
-        }
+        selected.Deselect();
+        selected = hitInfo.collider.gameObject.GetComponent<Controller>();
+        selected.Select();
     }
 
     //selects an axis on the controller after it is made visible
@@ -165,11 +158,11 @@ public class WorldManager : MonoBehaviour
             ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out hitInfo))
             {
-                if(hitInfo.collider.tag == "x" || hitInfo.collider.tag == "y" || hitInfo.collider.tag == "z")
+                if(hitInfo.collider.CompareTag("x") || hitInfo.collider.CompareTag("y") || hitInfo.collider.CompareTag("z"))
                 {
-                    selectedAxis = hitInfo.collider.gameObject;
-                    original = selectedAxis.GetComponent<Renderer>().material.color;
-                    selectedAxis.GetComponent<Renderer>().material.SetColor("_Color", new Color(1f, 0.92f, 0.016f, 0.5f));
+                    selectedAxis = hitInfo.collider.gameObject.GetComponent<Renderer>();
+                    original = selectedAxis.material.color;
+                    selectedAxis.material.SetColor("_Color", new Color(1f, 0.92f, 0.016f, 0.5f));
                 }
                 
             }
@@ -182,61 +175,49 @@ public class WorldManager : MonoBehaviour
         dy = mouseY - Input.mousePosition.y;
         mouseX = Input.mousePosition.x;
         mouseY = Input.mousePosition.y;
-        
+
         // something that's been bugging me in the example solution is how the axis movement goes
         // totally out of whack if the camera is rotated
-        // this is an attempt to do things differently? and ideally it'd be cool/correct to
-        // incorporate both dx and dy but i can't quite figure it out atm (for example an axis
-        // that's diagonal onscreen should move equal amounts if the mouse goes either sideways or downwards)
+        // this is an attempt to do things differently? trying to take screen space into account
+        // so that e.g. if an axis is pointing left onscreen, moving the mouse left always moves the
+        // selected controller along that axis
+        // or if an axis is diagonal onscreen, moving the mouse either up or sideways moves the controller
+        // by an equal amount
+
+        // get the scalar projection between the camera's (screen's) axes and the object's current axis
         float screenRight = Vector3.Project(Camera.main.transform.right, selectedAxis.transform.up).magnitude;
         float screenUp = Vector3.Project(Camera.main.transform.up, selectedAxis.transform.up).magnitude;
+        // (that should be equivalent to Vector3.Dot(camera right, axis up) and
+        // Vector3.Dot(camera up, axis up) right...? but the sign goes wonky when
+        // i do that and idk how to get it right)
 
-        // so for now we just take the one component (out of dx and dy) that contributes 'most' to the
-        // axis's movement, i.e. the one that overlaps more with the axis's up direction
-        // and also figure out whether to negate it or not based on where the camera is in relation to the axis
-        float directionScale = (screenRight > screenUp) switch
-        {
-            true => dx * screenRight * -Mathf.Sign(Vector3.Dot(Camera.main.transform.right, selectedAxis.transform.up)),
-            false => dy * screenUp * -Mathf.Sign(Vector3.Dot(Camera.main.transform.up, selectedAxis.transform.up))
-        };
-
-        selected.transform.localPosition += directionScale * tracking * selectedAxis.transform.up;
-
-        /*
-        Vector3 delta = new Vector3(0,0,0);
-
-        if(selectedAxis.tag == "x") {
-            dx = mouseX - Input.mousePosition.x;
-            mouseX = Input.mousePosition.x;
-            delta = -dx * tracking * transform.right;
-        }
-        else if(selectedAxis.tag == "y") {
-            dy = mouseY - Input.mousePosition.y;
-            mouseY = Input.mousePosition.y;
-            delta = -dy * tracking * transform.up;
-        }
-        else if(selectedAxis.tag == "z"){
-            //use dy since there is no z for the mouse
-            dy = mouseY - Input.mousePosition.y;
-            mouseY = Input.mousePosition.y;
-            delta = -dy * tracking * transform.forward;
-        }
-        selected.transform.localPosition += delta;
-        */
+        // add together the individual components of the mouse movement,
+        // weighted by how much they 'contribute' to movement along the axis
+        // (i.e. weighted by how much they overlap with the axis's up direction)
+        float directionScale = (
+            dx
+            * screenRight
+            // determine whether the camera is behind or in front of the vector
+            // and flip the direction accordingly
+            * -Mathf.Sign(Vector3.Dot(Camera.main.transform.right, selectedAxis.transform.up))
+        ) + (
+            dy
+            * screenUp
+            * -Mathf.Sign(Vector3.Dot(Camera.main.transform.up, selectedAxis.transform.up))
+        );
+        
+        selected.MoveBy(directionScale * tracking * selectedAxis.transform.up);
     }
 
     //deselects the currently selected object
     void Deselect()
     {
-        selected.GetComponent<Renderer>().material.SetColor("_Color", Color.white);
-        for(int i = 0; i < 3; i++) {
-            selected.transform.GetChild(i).GetComponent<Renderer>().enabled = false;
-        }
+        selected.Deselect();
         selected = null;
     }
 
     void DeselectAxis() {
-        selectedAxis.GetComponent<Renderer>().material.SetColor("_Color", original);
+        selectedAxis.material.SetColor("_Color", original);
         selectedAxis = null;
     }
 }

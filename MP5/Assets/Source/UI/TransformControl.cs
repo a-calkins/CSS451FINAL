@@ -65,7 +65,7 @@ public class TransformControl : MonoBehaviour
     //---------------------------------------------------------------------------------
 
     //---------------------------------------------------------------------------------
-    // resopond to sldier bar value changes
+    // resopond to slider bar value changes
     void XValueChanged(float v)
     {
         Vector3 p = ReadObjectTransfrom();

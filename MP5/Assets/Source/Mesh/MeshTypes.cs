@@ -13,15 +13,17 @@ public class MeshTypes
         public readonly Vector3[] vertices;
         public readonly int[] triangles;
         public readonly Vector3[] normals;
+        public readonly bool symmetry;
 
         // for debugging
-        public static readonly Mesh EMPTY = new Mesh(new Vector3[] { }, new int[] { }, new Vector3[] { });
+        public static readonly Mesh EMPTY = new Mesh(new Vector3[] { }, new int[] { }, new Vector3[] { }, false);
 
-        public Mesh(Vector3[] v, int[] t, Vector3[] n)
+        public Mesh(Vector3[] v, int[] t, Vector3[] n, bool s)
         {
             vertices = v;
             triangles = t;
             normals = n;
+            symmetry = s;
         }
     }
 
@@ -36,6 +38,8 @@ public class MeshTypes
         protected int numVertices;
         protected int numQuads { get { return numVertices - 1; } }
         protected int size;
+        
+        public abstract bool Symmetry { get; }  // this should be a static readonly attr but oh well lol
 
         public static SliderWithEcho.Values sliderValues;
 
@@ -127,6 +131,11 @@ public class MeshTypes
 
     private static Mesh Generate(Generator generator)
     {
-        return new Mesh(generator.Vertices(), generator.Triangles(), generator.Normals());
+        return new Mesh(
+            generator.Vertices(),
+            generator.Triangles(),
+            generator.Normals(),
+            generator.Symmetry
+        );
     }
 }

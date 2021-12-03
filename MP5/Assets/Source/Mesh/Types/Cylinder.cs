@@ -13,10 +13,18 @@ public class Cylinder : MeshTypes.Generator
     public static SliderWithEcho.Values Resolution = new SliderWithEcho.Values(4, 20, 10);
     public static SliderWithEcho.Values Size = new SliderWithEcho.Values(10, 360, 180);
 
+    // indicates that this mesh is symmetric on its Y axis and that any changes
+    // to controllers should be propagated along that axis
+    // this should ideally be static but that would get sloppy so w/e
+    // (TODO if we have time: allow either X or Y symmetry to be selected?)
+    public override bool Symmetry {
+        get { return true;  }
+    }
+
     public Cylinder(int numVertices, int maxDegree)
     {
         this.numVertices = numVertices;
-        this.size = maxDegree;
+        size = maxDegree;
     }
 
     public override Vector3 Vertex(int x, int y)

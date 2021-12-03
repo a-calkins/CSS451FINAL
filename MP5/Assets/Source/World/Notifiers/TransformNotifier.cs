@@ -6,8 +6,8 @@ public class TransformNotifier : Notifier<TransformNotifier.Transform>
 {
     public class Transform
     {
-        Vector3 vector;
-        Quaternion quaternion;
+        public readonly Vector3 vector;
+        public readonly Quaternion quaternion;
 
         public Transform(Vector3 v, Quaternion q)
         {

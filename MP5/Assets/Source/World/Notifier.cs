@@ -1,11 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Notifier<T> : MonoBehaviour
 {
-    public delegate void Notify(T val);
-    public event Notify NewValue;
+    public event Action<T> NewValue;
 
     public T current { get; private set; }
 
