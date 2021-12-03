@@ -20,11 +20,12 @@ public class WorldManager : MonoBehaviour
     private SliderWithEcho sizeSlider;
 
     //vertex selection and manipulation stuff
-    private GameObject selected;
+    private GameObject selected, selectedAxis;
     RaycastHit hitInfo = new RaycastHit();
     Ray ray;
+    Color original;
     bool visible;
-    float mouseX = 0, mouseY = 0, tracking = 0.05f;
+    float mouseX = 0, mouseY = 0, dy, dx, tracking = 0.05f;
 
     void Awake()
     {
@@ -89,20 +90,27 @@ public class WorldManager : MonoBehaviour
             visible = false;
         }
         if(Input.GetMouseButtonDown(0) && visible) {
-            if(selected == null) {
-                SelectObject();
+            SelectObject();
+            if(selected != null && selectedAxis == null) {
+                mouseX = Input.mousePosition.x;
+                mouseY = Input.mousePosition.y;
+                SelectAxis();
             }
-            mouseX = Input.mousePosition.x;
-            mouseY = Input.mousePosition.y;
         }
         if(Input.GetMouseButton(0) && visible)
         {
-            if(selected == null)
-                SelectObject();
-            else
+            if(selectedAxis == null) {
+                mouseX = Input.mousePosition.x;
+                mouseY = Input.mousePosition.y;
+                SelectAxis();
+            }
+            if(selectedAxis != null && selected != null)
                 DragObject();      
         }
-        if((Input.GetMouseButtonUp(0) && selected != null) || !visible) {
+        if(Input.GetMouseButtonUp(0) && selectedAxis != null) {
+            DeselectAxis();
+        }
+        if(selected != null && !visible) {
             Deselect();
         } 
     }
@@ -117,7 +125,46 @@ public class WorldManager : MonoBehaviour
             {
                 if(hitInfo.collider.tag == "Controller")
                 {
-                    selected = hitInfo.collider.gameObject;
+                    if(selected == null) {
+                        selected = hitInfo.collider.gameObject;
+                        selected.GetComponent<Renderer>().material.SetColor("_Color", Color.black);
+                        for(int i = 0; i < 3; i++) {
+                            selected.transform.GetChild(i).GetComponent<Renderer>().enabled = true;
+                        }
+                    }
+                    else if(selected != null && hitInfo.collider.gameObject == selected) {
+                        Deselect();
+                    }
+                    else {
+                        SelectNew();
+                    } 
+                }  
+            }
+        }
+    }
+    void SelectNew() {
+        selected.GetComponent<Renderer>().material.SetColor("_Color", Color.white);
+        for(int i = 0; i < 3; i++) {
+            selected.transform.GetChild(i).GetComponent<Renderer>().enabled = false;
+        }
+        selected = hitInfo.collider.gameObject;
+        selected.GetComponent<Renderer>().material.SetColor("_Color", Color.black);
+        for(int i = 0; i < 3; i++) {
+            selected.transform.GetChild(i).GetComponent<Renderer>().enabled = true;
+        }
+    }
+    //selects an axis on the controller after it is made visible
+    void SelectAxis() {
+        if (!EventSystem.current.IsPointerOverGameObject())
+        {
+            ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out hitInfo))
+            {
+                if(hitInfo.collider.tag == "x" || hitInfo.collider.tag == "y" || hitInfo.collider.tag == "z")
+                {
+                    selectedAxis = hitInfo.collider.gameObject;
+                    original = selectedAxis.GetComponent<Renderer>().material.color;
+                    selectedAxis.GetComponent<Renderer>().material.SetColor("_Color", new Color(1f, 0.92f, 0.016f, 0.5f));
                 }
                 
             }
@@ -125,17 +172,36 @@ public class WorldManager : MonoBehaviour
     }
     //drags the object
     void DragObject() {
-        float dx = mouseX - Input.mousePosition.x;
-        float dy = mouseY - Input.mousePosition.y;
-        mouseX = Input.mousePosition.x;
-        mouseY = Input.mousePosition.y;
-
-        Vector3 delta = -dx * tracking * transform.right + -dy * tracking * transform.up;
+        Vector3 delta = new Vector3(0,0,0);
+        if(selectedAxis.tag == "x") {
+            dx = mouseX - Input.mousePosition.x;
+            mouseX = Input.mousePosition.x;
+            delta = -dx * tracking * transform.right;
+        }
+        else if(selectedAxis.tag == "y") {
+            dy = mouseY - Input.mousePosition.y;
+            mouseY = Input.mousePosition.y;
+            delta = -dy * tracking * transform.up;
+        }
+        else if(selectedAxis.tag == "z"){
+            //use dy since there is no z for the mouse
+            dy = mouseY - Input.mousePosition.y;
+            mouseY = Input.mousePosition.y;
+            delta = -dy * tracking * transform.forward;
+        }
         selected.transform.localPosition += delta;
     }
     //deselects the currently selected object
     void Deselect()
     {
+        selected.GetComponent<Renderer>().material.SetColor("_Color", Color.white);
+        for(int i = 0; i < 3; i++) {
+            selected.transform.GetChild(i).GetComponent<Renderer>().enabled = false;
+        }
         selected = null;
+    }
+    void DeselectAxis() {
+        selectedAxis.GetComponent<Renderer>().material.SetColor("_Color", original);
+        selectedAxis = null;
     }
 }
