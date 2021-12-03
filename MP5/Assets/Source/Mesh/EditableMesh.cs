@@ -12,7 +12,9 @@ public class EditableMesh : MonoBehaviour
     private SliderWithEcho.Values resolution;
     private SliderWithEcho.Values size;
     new public string name;
-
+    //array to hold the controllers (spheres)
+    public GameObject[] controllers;
+    bool visible;
     void Awake()
     {
         // if we do this in Start instead of Awake, meshFilter will be null
@@ -36,6 +38,7 @@ public class EditableMesh : MonoBehaviour
         }
         meshFilter.mesh.SetTriangles(triangles, 0);
         meshFilter.mesh.SetNormals(normals);
+        InitControllers(vertices);
     }
 
     public void SetMesh(MeshTypes.Mesh mesh)
@@ -63,5 +66,49 @@ public class EditableMesh : MonoBehaviour
         {
             size.value = val;
         }
+    }
+    //places the controllers on the mesh in the positions defined by its vertices.
+    void InitControllers(Vector3[] vertices) {
+        controllers = new GameObject[vertices.Length];
+        for(int i = 0; i < vertices.Length; i++) {
+            controllers[i] = GameObject.Instantiate(Resources.Load("Prefabs/Controller") as GameObject);
+
+            controllers[i].transform.localPosition = vertices[i];
+            controllers[i].transform.parent = this.transform;
+
+            controllers[i].transform.GetComponent<MeshRenderer>().enabled = false;
+            controllers[i].transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
+            visible = false;
+        }
+    }
+    //make the controllers visible and interactable
+    public void ShowControllers() {
+        if(controllers != null && !visible) {
+            for(int i = 0; i < controllers.Length; i++) {
+                controllers[i].transform.GetComponent<MeshRenderer>().enabled = true;
+                controllers[i].transform.GetChild(0).GetComponent<MeshRenderer>().enabled = true;
+            }
+            visible = true;
+        }
+    }
+    //hide the controllers and make them uninteractable
+    public void HideControllers() {
+        if(controllers != null && visible) {
+            for(int i = 0; i < controllers.Length; i++) {
+                controllers[i].transform.GetComponent<MeshRenderer>().enabled = false;
+                controllers[i].transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
+            }
+            visible = false;
+        }
+    }
+    //updates the vertices when a controller is moved
+    void Update() {
+        Vector3[] v = meshFilter.mesh.vertices;
+        if(controllers != null) {
+            for(int i = 0; i < controllers.Length; i++) {
+                v[i] = controllers[i].transform.localPosition;
+            }
+        }
+        meshFilter.mesh.SetVertices(v);
     }
 }
