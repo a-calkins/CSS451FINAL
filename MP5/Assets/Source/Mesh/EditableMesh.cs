@@ -15,7 +15,7 @@ public class EditableMesh : MonoBehaviour
     new public string name;
     //array to hold the controllers (spheres)
     public GameObject[] controllers;
-    bool visible;
+    public bool visible;
 
     void Awake()
     {
@@ -40,7 +40,7 @@ public class EditableMesh : MonoBehaviour
         }
         meshFilter.mesh.SetTriangles(triangles, 0);
         meshFilter.mesh.SetNormals(normals);
-        InitControllers(vertices);
+        UpdateControllers(vertices);
     }
 
     public void SetMesh(MeshTypes.Mesh mesh)
@@ -69,22 +69,45 @@ public class EditableMesh : MonoBehaviour
             size.value = val;
         }
     }
+
     //places the controllers on the mesh in the positions defined by its vertices.
-    void InitControllers(Vector3[] vertices) {
-        controllers = new GameObject[vertices.Length];
-        for(int i = 0; i < vertices.Length; i++) {
+    public void UpdateControllers(Vector3[] vertices) {
+        GameObject[] newControllers = new GameObject[vertices.Length];
 
-            controllers[i] = GameObject.Instantiate(Resources.Load("Prefabs/Controller") as GameObject);
-            controllers[i].transform.localPosition = vertices[i];
-            controllers[i].transform.parent = this.transform;
+        // if we already had some controllers, update them to new positions
+        for (int i = 0; i < Mathf.Min(controllers.Length, newControllers.Length); i++)
+        {
+            newControllers[i] = controllers[i];
+            newControllers[i].transform.GetComponent<MeshRenderer>().enabled = visible;
+            for (int j = 0; j < 3; j++)
+            {
+                newControllers[i].transform.GetChild(j).GetComponent<Renderer>().enabled = false;
+            }
+            newControllers[i].transform.localPosition = vertices[i];
+        }
 
-            controllers[i].transform.GetComponent<MeshRenderer>().enabled = false;
+        // fill in any controllers we still need to create
+        for (int i = controllers.Length; i < newControllers.Length; i++) {
+            newControllers[i] = Instantiate(Resources.Load("Prefabs/Controller") as GameObject);
+            newControllers[i].transform.localPosition = vertices[i];
+            newControllers[i].transform.parent = this.transform;
+
+            newControllers[i].transform.GetComponent<MeshRenderer>().enabled = visible;
             for(int j = 0; j < 3; j++) {
-                controllers[i].transform.GetChild(j).GetComponent<Renderer>().enabled = false;
+                newControllers[i].transform.GetChild(j).GetComponent<Renderer>().enabled = false;
             }
             visible = false;
         }
+
+        // yeet any surplus controllers (rip)
+        for (int i = newControllers.Length; i < controllers.Length; i++)
+        {
+            Destroy(controllers[i]);
+        }
+
+        controllers = newControllers;
     }
+
     //make the controllers visible and interactable
     public void ShowControllers() {
         if(controllers != null && !visible) {
@@ -94,6 +117,7 @@ public class EditableMesh : MonoBehaviour
             visible = true;
         }
     }
+
     //hide the controllers and make them uninteractable
     public void HideControllers() {
         if(controllers != null && visible) {
@@ -106,6 +130,7 @@ public class EditableMesh : MonoBehaviour
             visible = false;
         }
     }
+
     //updates the vertices when a controller is moved
     void Update() {
         Vector3[] v = meshFilter.mesh.vertices;

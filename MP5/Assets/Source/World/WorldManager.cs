@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEditor;
 
 public class WorldManager : MonoBehaviour
 {
@@ -10,12 +11,8 @@ public class WorldManager : MonoBehaviour
     // ugly :X these Notifiers are just weird wrappers for delegates
     public StringNotifier dropdown;
     public TransformNotifier textureTransform;
-    // thinking of just having one slider for all meshes' resolutions
-    // (we could still keep track of different meshes' resolutions separately,
-    // just without showing two sliders at all times?)
     public FloatNotifier resolution;
     private SliderWithEcho resolutionSlider;
-    // we can control the plane's size too, why not
     public FloatNotifier size;
     private SliderWithEcho sizeSlider;
 
@@ -81,13 +78,19 @@ public class WorldManager : MonoBehaviour
     }
 
     void Update() {
-        if(Input.GetKeyDown(KeyCode.LeftControl)) {
-            obj.ShowControllers();
+        // this feels hacky, it's only here to stop newly instantiated
+        // controllers from disappearing (since they inherit obj.visible)
+        // should remove this if we can do it 100% within obj instead
+        obj.visible = visible;
+        if(Input.GetKeyDown(KeyCode.LeftControl))
+        {
             visible = true;
+            obj.ShowControllers();
         }
-        if(Input.GetKeyUp(KeyCode.LeftControl)) {
-            obj.HideControllers();
+        if(Input.GetKeyUp(KeyCode.LeftControl))
+        {
             visible = false;
+            obj.HideControllers();
         }
         if(Input.GetMouseButtonDown(0) && visible) {
             SelectObject();
@@ -142,6 +145,7 @@ public class WorldManager : MonoBehaviour
             }
         }
     }
+
     void SelectNew() {
         selected.GetComponent<Renderer>().material.SetColor("_Color", Color.white);
         for(int i = 0; i < 3; i++) {
@@ -153,6 +157,7 @@ public class WorldManager : MonoBehaviour
             selected.transform.GetChild(i).GetComponent<Renderer>().enabled = true;
         }
     }
+
     //selects an axis on the controller after it is made visible
     void SelectAxis() {
         if (!EventSystem.current.IsPointerOverGameObject())
@@ -170,9 +175,36 @@ public class WorldManager : MonoBehaviour
             }
         }
     }
+
     //drags the object
     void DragObject() {
+        dx = mouseX - Input.mousePosition.x;
+        dy = mouseY - Input.mousePosition.y;
+        mouseX = Input.mousePosition.x;
+        mouseY = Input.mousePosition.y;
+        
+        // something that's been bugging me in the example solution is how the axis movement goes
+        // totally out of whack if the camera is rotated
+        // this is an attempt to do things differently? and ideally it'd be cool/correct to
+        // incorporate both dx and dy but i can't quite figure it out atm (for example an axis
+        // that's diagonal onscreen should move equal amounts if the mouse goes either sideways or downwards)
+        float screenRight = Vector3.Project(Camera.main.transform.right, selectedAxis.transform.up).magnitude;
+        float screenUp = Vector3.Project(Camera.main.transform.up, selectedAxis.transform.up).magnitude;
+
+        // so for now we just take the one component (out of dx and dy) that contributes 'most' to the
+        // axis's movement, i.e. the one that overlaps more with the axis's up direction
+        // and also figure out whether to negate it or not based on where the camera is in relation to the axis
+        float directionScale = (screenRight > screenUp) switch
+        {
+            true => dx * screenRight * -Mathf.Sign(Vector3.Dot(Camera.main.transform.right, selectedAxis.transform.up)),
+            false => dy * screenUp * -Mathf.Sign(Vector3.Dot(Camera.main.transform.up, selectedAxis.transform.up))
+        };
+
+        selected.transform.localPosition += directionScale * tracking * selectedAxis.transform.up;
+
+        /*
         Vector3 delta = new Vector3(0,0,0);
+
         if(selectedAxis.tag == "x") {
             dx = mouseX - Input.mousePosition.x;
             mouseX = Input.mousePosition.x;
@@ -190,7 +222,9 @@ public class WorldManager : MonoBehaviour
             delta = -dy * tracking * transform.forward;
         }
         selected.transform.localPosition += delta;
+        */
     }
+
     //deselects the currently selected object
     void Deselect()
     {
@@ -200,6 +234,7 @@ public class WorldManager : MonoBehaviour
         }
         selected = null;
     }
+
     void DeselectAxis() {
         selectedAxis.GetComponent<Renderer>().material.SetColor("_Color", original);
         selectedAxis = null;
