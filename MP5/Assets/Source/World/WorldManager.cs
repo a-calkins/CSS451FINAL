@@ -185,26 +185,13 @@ public class WorldManager : MonoBehaviour
         // by an equal amount
 
         // get the scalar projection between the camera's (screen's) axes and the object's current axis
-        float screenRight = Vector3.Project(Camera.main.transform.right, selectedAxis.transform.up).magnitude;
-        float screenUp = Vector3.Project(Camera.main.transform.up, selectedAxis.transform.up).magnitude;
-        // (that should be equivalent to Vector3.Dot(camera right, axis up) and
-        // Vector3.Dot(camera up, axis up) right...? but the sign goes wonky when
-        // i do that and idk how to get it right)
+        float screenRight = -Vector3.Dot(Camera.main.transform.right, selectedAxis.transform.up);
+        float screenUp = -Vector3.Dot(Camera.main.transform.up, selectedAxis.transform.up);
 
         // add together the individual components of the mouse movement,
         // weighted by how much they 'contribute' to movement along the axis
         // (i.e. weighted by how much they overlap with the axis's up direction)
-        float directionScale = (
-            dx
-            * screenRight
-            // determine whether the camera is behind or in front of the vector
-            // and flip the direction accordingly
-            * -Mathf.Sign(Vector3.Dot(Camera.main.transform.right, selectedAxis.transform.up))
-        ) + (
-            dy
-            * screenUp
-            * -Mathf.Sign(Vector3.Dot(Camera.main.transform.up, selectedAxis.transform.up))
-        );
+        float directionScale = dx * screenRight + dy * screenUp;
         
         selected.MoveBy(directionScale * tracking * selectedAxis.transform.up);
     }

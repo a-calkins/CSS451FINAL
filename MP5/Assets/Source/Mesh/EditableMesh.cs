@@ -103,7 +103,7 @@ public class EditableMesh : MonoBehaviour
             newControllers[i].transform.forward = normals[i];
             newControllers[i].transform.parent = transform;
 
-            // we have to 'freeze 'these values because if we just pass (i, newControllers[i]) into
+            // we have to 'freeze' these values because if we just pass (i, newControllers[i]) into
             // UpdateController() in the delegate, they'll take the values they have at the
             // very end of the loop (so by the time the delegate gets called, i = vertices.Length and stuff)
             Controller freezeController = newControllers[i];
