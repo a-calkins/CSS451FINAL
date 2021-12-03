@@ -20,8 +20,7 @@ public class CameraManipulation : MonoBehaviour
     {
         //look at the look at position
         transform.up = Vector3.up;
-        transform.forward = (LookAtPosition.localPosition - transform.localPosition).normalized;
-
+        transform.forward = (LookAtPosition.transform.localPosition - transform.localPosition).normalized;
 
         //gets the mouse click position
         if (Input.GetKey(KeyCode.LeftAlt) &&
@@ -48,11 +47,11 @@ public class CameraManipulation : MonoBehaviour
                 RotateHorizontal(moveAroundY * tiltAngle);
             }
             //handle tracking
-            /*else if(Input.GetMouseButton(1)) {
+            else if(Input.GetMouseButton(1)) {
                 Vector3 delta = moveAroundX * trackingDistance * transform.right + moveAroundY * trackingDistance * transform.up;
                 LookAtPosition.localPosition += delta;
                 transform.localPosition += delta;  
-            }*/
+            }
         }
 
         if (Input.GetKey(KeyCode.LeftAlt))
