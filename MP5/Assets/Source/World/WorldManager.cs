@@ -48,7 +48,14 @@ public class WorldManager : MonoBehaviour
             SetMesh(obj.name, resolution.current, value);
             obj.Size((int)value);
         };
-        // textureTransform.NewValue += objTex.TransformBy;
+        textureTransform.NewValue += delegate (TransformNotifier.Transform t)
+        {
+            obj.UpdateTransform(
+                Matrix3x3Helpers.CreateTranslation(t.translation)
+                * Matrix3x3Helpers.CreateRotation(t.rotation.z, t.rotation.x, t.rotation.y)
+                * Matrix3x3Helpers.CreateScale(t.scale)
+            );
+        };
 
         // initialize 
         SetSliders("mesh");

@@ -20,13 +20,13 @@ public class TexturePlacement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        /*
+        
         renderer.material.SetFloat("MyTexOffset_X", offset.x);
         renderer.material.SetFloat("MyTexOffset_Y", offset.y);
 
         renderer.material.SetFloat("MyTexScale_X", scale.x);
         renderer.material.SetFloat("MyTexScale_Y", scale.y);
-        */
+        
 
         renderer.material.SetFloat("debugNormals", debugNormals);
     }

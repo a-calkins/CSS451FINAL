@@ -31,14 +31,14 @@ public class Controller : MonoBehaviour
     public Controller MoveBy(Vector3 delta)
     {
         transform.localPosition += delta;
-        notifier.UpdateValue(new TransformNotifier.Transform(delta, Quaternion.identity));
+        notifier.UpdateValue(new TransformNotifier.Transform(delta));
         return this;
     }
 
     public Controller MoveSilentlyBy(Vector3 delta)
     {
         transform.localPosition += delta;
-        notifier.UpdateValueSilently(new TransformNotifier.Transform(delta, Quaternion.identity));
+        notifier.UpdateValueSilently(new TransformNotifier.Transform(delta));
         return this;
     }
 

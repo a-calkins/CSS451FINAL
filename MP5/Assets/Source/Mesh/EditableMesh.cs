@@ -172,7 +172,7 @@ public class EditableMesh : MonoBehaviour
                 controllers[i].MoveSilentlyBy(
                     // align the right axis with the normal
                     Quaternion.FromToRotation(-Vector3.forward, Vector3.Cross(Vector3.up, meshFilter.mesh.normals[i]))
-                    * t.vector
+                    * t.translation
                 );
                 // TODO: if we want generalized x/y symmetry this AboveBelow function has to be
                 // replaced with something smarter
