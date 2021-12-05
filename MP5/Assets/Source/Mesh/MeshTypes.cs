@@ -16,7 +16,12 @@ public class MeshTypes
         public readonly bool symmetry;
 
         // for debugging
-        public static readonly Mesh EMPTY = new Mesh(new Vector3[] { }, new int[] { }, new Vector3[] { }, false);
+        public static readonly Mesh EMPTY = new Mesh(
+            new Vector3[] { },
+            new int[] { },
+            new Vector3[] { },
+            false
+        );
 
         public Mesh(Vector3[] v, int[] t, Vector3[] n, bool s)
         {
@@ -25,6 +30,13 @@ public class MeshTypes
             normals = n;
             symmetry = s;
         }
+
+        public Mesh(Generator g) : this(
+            g.Vertices(),
+            g.Triangles(),
+            g.Normals(),
+            g.Symmetry
+        ) { }
     }
 
     // individual mesh generators (plane, cylinder, possibly others for extra
@@ -131,11 +143,6 @@ public class MeshTypes
 
     private static Mesh Generate(Generator generator)
     {
-        return new Mesh(
-            generator.Vertices(),
-            generator.Triangles(),
-            generator.Normals(),
-            generator.Symmetry
-        );
+        return new Mesh(generator);
     }
 }

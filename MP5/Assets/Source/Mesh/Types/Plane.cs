@@ -12,7 +12,6 @@ public class Plane : MeshTypes.Generator
     {
         get { return false; }
     }
-
     public Plane(int numVertices, int size)
     {
         this.numVertices = numVertices;

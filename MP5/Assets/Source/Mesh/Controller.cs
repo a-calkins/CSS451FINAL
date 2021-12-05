@@ -6,9 +6,10 @@ using UnityEngine;
 [RequireComponent(typeof(Renderer))]
 public class Controller : MonoBehaviour
 {
-    public EditableMesh parent;
     public TransformNotifier notifier;  // let other objects subscribe to this controller's position updates
-    public Renderer normal;  // to be added
+    private Renderer normal;
+    public Vector3 Normal { get { return normal.transform.up;  } }
+    private Transform axes;
 
     private new Renderer renderer;
 
@@ -16,6 +17,9 @@ public class Controller : MonoBehaviour
     {
         notifier = GetComponent<TransformNotifier>();
         renderer = GetComponent<Renderer>();
+
+        normal = transform.Find("normal").GetComponent<Renderer>();
+        axes = transform.Find("axes").GetComponent<Transform>();
     }
 
     public Controller MoveSilentlyTo(Vector3 position)
@@ -38,29 +42,44 @@ public class Controller : MonoBehaviour
         return this;
     }
 
+    public Controller SetRotation(Vector3 n)
+    {
+        // align the right axis with the normal
+        if (Vector3.Dot(Vector3.right, n) + 1 < Mathf.Epsilon)
+        {
+            // this is a special case that breaks the FromToRotation below
+            axes.localRotation = Quaternion.AngleAxis(180, Vector3.up);
+        }
+        else
+        {
+            axes.localRotation = Quaternion.FromToRotation(
+                -Vector3.forward,
+                Vector3.Cross(Vector3.up, n)
+            );
+        }
+        SetNormal(n);
+        return this;
+    }
+
     public Controller SetNormal(Vector3 n)
     {
         normal.transform.up = n;
+        normal.transform.localPosition = n;
         return this;
     }
 
     public Controller Hide()
     {
         renderer.enabled = false;
-        if (normal != null)
-        {
-            normal.enabled = false;
-        }
-        return HideAxes();
+        normal.enabled = false;
+        HideAxes();
+        return this;
     }
 
     public Controller Show()
     {
         renderer.enabled = true;
-        if (normal != null)
-        {
-            normal.enabled = true;
-        }
+        normal.enabled = true;
         return this;
     }
 
@@ -68,35 +87,28 @@ public class Controller : MonoBehaviour
     {
         if (visible)
         {
-            return Show();
+            Show();
+        } else
+        {
+            Hide();
         }
-        return Hide();
+        return this;
     }
 
     public Controller HideAxes()
     {
-        foreach (Transform child in transform)
+        foreach (Transform axis in axes)
         {
-            // skip the normal, only do the axes
-            if (normal != null && ReferenceEquals(child.gameObject, normal.gameObject))
-            {
-                continue;
-            }
-            child.GetComponent<Renderer>().enabled = false;
+            axis.GetComponent<Renderer>().enabled = false;
         }
         return this;
     }
 
     public Controller ShowAxes()
     {
-        foreach (Transform child in transform)
+        foreach (Transform axis in axes)
         {
-            // skip the normal
-            if (normal != null && ReferenceEquals(child.gameObject, normal.gameObject))
-            {
-                continue;
-            }
-            child.GetComponent<Renderer>().enabled = true;
+            axis.GetComponent<Renderer>().enabled = true;
         }
         return this;
     }
@@ -104,12 +116,14 @@ public class Controller : MonoBehaviour
     public Controller Select()
     {
         renderer.material.SetColor("_Color", Color.black);
-        return ShowAxes();
+        ShowAxes();
+        return this;
     }
 
     public Controller Deselect()
     {
         renderer.material.SetColor("_Color", Color.white);
-        return HideAxes ();
+        HideAxes();
+        return this;
     }
 }

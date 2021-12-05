@@ -13,7 +13,7 @@ public class Cylinder : MeshTypes.Generator
     public static SliderWithEcho.Values Resolution = new SliderWithEcho.Values(4, 20, 10);
     public static SliderWithEcho.Values Size = new SliderWithEcho.Values(10, 360, 180);
 
-    // indicates that this mesh is symmetric on its Y axis and that any changes
+    // indicates that this mesh is symmetric on its X axis and that any changes
     // to controllers should be propagated along that axis
     // this should ideally be static but that would get sloppy so w/e
     // (TODO if we have time: allow either X or Y symmetry to be selected?)
@@ -30,9 +30,9 @@ public class Cylinder : MeshTypes.Generator
     public override Vector3 Vertex(int x, int y)
     {
         return new Vector3(
-            RADIUS * Mathf.Cos(Mathf.Deg2Rad * (x * size / (float)numQuads)),
+            RADIUS * Mathf.Cos(Mathf.Deg2Rad * x * size / numQuads),
             y * (HEIGHT / (float)numQuads) - HEIGHT / 2f,
-            RADIUS * Mathf.Sin(Mathf.Deg2Rad * (x * size / (float)numQuads))
+            RADIUS * Mathf.Sin(Mathf.Deg2Rad * x * size / numQuads)
         );
     }
 
@@ -40,6 +40,6 @@ public class Cylinder : MeshTypes.Generator
     {
         // todo: do the actual math here instead of just calling Vertex()
         Vector3 vertex = Vertex(x, y);
-        return (vertex - new Vector3(0, vertex.y, 0)).normalized;
+        return new Vector3(vertex.x, 0, vertex.z).normalized;
     }
 }

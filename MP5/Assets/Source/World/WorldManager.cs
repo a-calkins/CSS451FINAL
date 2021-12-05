@@ -94,9 +94,14 @@ public class WorldManager : MonoBehaviour
             visible = false;
             obj.HideControllers();
         }
+        if (Input.GetKey(KeyCode.LeftAlt))
+        {
+            return;
+        }
         if(Input.GetMouseButtonDown(0) && visible) {
             SelectObject();
-            if(selected != null && selectedAxis == null) {
+            if(selected != null && selectedAxis == null)
+            {
                 mouseX = Input.mousePosition.x;
                 mouseY = Input.mousePosition.y;
                 SelectAxis();
@@ -104,7 +109,8 @@ public class WorldManager : MonoBehaviour
         }
         if(Input.GetMouseButton(0) && visible)
         {
-            if(selectedAxis == null) {
+            if(selectedAxis == null)
+            {
                 mouseX = Input.mousePosition.x;
                 mouseY = Input.mousePosition.y;
                 SelectAxis();
