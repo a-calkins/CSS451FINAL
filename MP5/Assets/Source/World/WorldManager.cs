@@ -29,7 +29,6 @@ public class WorldManager : MonoBehaviour
     {
         resolutionSlider = resolution.GetComponent<SliderWithEcho>();
         sizeSlider = size.GetComponent<SliderWithEcho>();
-        objTex = obj.GetComponent<TexturePlacement>();
     }
 
     void Start()
