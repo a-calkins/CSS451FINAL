@@ -14,14 +14,16 @@ public class TransformControl : MonoBehaviour
     private Transform selected;
     private Vector3 previousSliderValues = Vector3.zero;
 
+    private Vector3 translation, rotation, scale;
+
     private TransformNotifier notifier;
 
     // Use this for initialization
     void Start()
     {
-        T.onValueChanged.AddListener(SetToTranslation);
-        R.onValueChanged.AddListener(SetToRotation);
-        S.onValueChanged.AddListener(SetToScaling);
+        T.onValueChanged.AddListener(delegate(bool on) { if (on) ObjectSetUI(); });
+        R.onValueChanged.AddListener(delegate (bool on) { if (on) ObjectSetUI(); });
+        S.onValueChanged.AddListener(delegate (bool on) { if (on) ObjectSetUI(); });
         X.SetSliderListener(XValueChanged);
         Y.SetSliderListener(YValueChanged);
         Z.SetSliderListener(ZValueChanged);
@@ -68,6 +70,7 @@ public class TransformControl : MonoBehaviour
     // resopond to slider bar value changes
     void XValueChanged(float v)
     {
+        UpdateCache(0, v);
         Vector3 p = ReadObjectTransfrom();
         // if not in rotation, next two lines of work would be wasted
         float dx = v - previousSliderValues.x;
@@ -79,6 +82,7 @@ public class TransformControl : MonoBehaviour
 
     void YValueChanged(float v)
     {
+        UpdateCache(1, v);
         Vector3 p = ReadObjectTransfrom();
         // if not in rotation, next two lines of work would be wasted
         float dy = v - previousSliderValues.y;
@@ -90,6 +94,11 @@ public class TransformControl : MonoBehaviour
 
     void ZValueChanged(float v)
     {
+        if (!R.isOn)
+        {
+            return;
+        }
+        UpdateCache(2, v);
         Vector3 p = ReadObjectTransfrom();
         // if not in rotation, next two lines of work would be wasterd
         float dz = v - previousSliderValues.z;
@@ -97,6 +106,20 @@ public class TransformControl : MonoBehaviour
         Quaternion q = Quaternion.AngleAxis(dz, Vector3.forward);
         p.z = v;
         SetObjectTransform(ref p, ref q);
+    }
+
+    void UpdateCache(int axis, float v)
+    {
+        if (T.isOn)
+        {
+            translation[axis] = v;
+        } else if (R.isOn)
+        {
+            rotation[axis] = v;
+        } else if (S.isOn)
+        {
+            scale[axis] = v;
+        }
     }
     //---------------------------------------------------------------------------------
 
@@ -114,7 +137,17 @@ public class TransformControl : MonoBehaviour
 
     public void ObjectSetUI()
     {
-        Vector3 p = ReadObjectTransfrom();
+        Vector3 p = Vector3.zero;
+        if (T.isOn)
+        {
+            p = translation;
+        } else if (R.isOn)
+        {
+            p = rotation;
+        } else if (S.isOn)
+        {
+            p = scale;
+        }
         X.SetSliderValue(p.x);  // do not need to call back for this comes from the object
         Y.SetSliderValue(p.y);
         Z.SetSliderValue(p.z);
@@ -147,6 +180,7 @@ public class TransformControl : MonoBehaviour
 
     private void SetObjectTransform(ref Vector3 p, ref Quaternion q)
     {
+        /*
         if (selected == null)
             return;
 
@@ -162,6 +196,7 @@ public class TransformControl : MonoBehaviour
         {
             selected.localRotation *= q;
         }
+        */
 
         if (notifier != null)
         {

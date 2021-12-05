@@ -31,4 +31,12 @@ public class Plane : MeshTypes.Generator
     {
         return Vector3.up;
     }
+
+    public override Vector2 UV(int x, int y)
+    {
+        return new Vector2(
+            x * size / (float)numQuads,
+            y * size / (float)numQuads
+        );
+    }
 }

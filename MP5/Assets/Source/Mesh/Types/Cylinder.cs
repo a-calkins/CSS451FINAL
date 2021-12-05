@@ -42,4 +42,12 @@ public class Cylinder : MeshTypes.Generator
         Vector3 vertex = Vertex(x, y);
         return new Vector3(vertex.x, 0, vertex.z).normalized;
     }
+
+    public override Vector2 UV(int x, int y)
+    {
+        return new Vector2(
+            x * size / (float)numQuads,
+            y * size / (float)numQuads
+        );
+    }
 }

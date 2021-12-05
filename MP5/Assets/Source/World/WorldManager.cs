@@ -29,6 +29,7 @@ public class WorldManager : MonoBehaviour
     {
         resolutionSlider = resolution.GetComponent<SliderWithEcho>();
         sizeSlider = size.GetComponent<SliderWithEcho>();
+        objTex = obj.GetComponent<TexturePlacement>();
     }
 
     void Start()
@@ -48,6 +49,7 @@ public class WorldManager : MonoBehaviour
             SetMesh(obj.name, resolution.current, value);
             obj.Size((int)value);
         };
+        // textureTransform.NewValue += objTex.TransformBy;
 
         // initialize 
         SetSliders("mesh");

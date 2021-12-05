@@ -13,6 +13,7 @@ public class MeshTypes
         public readonly Vector3[] vertices;
         public readonly int[] triangles;
         public readonly Vector3[] normals;
+        public readonly Vector2[] uv;
         public readonly bool symmetry;
 
         // for debugging
@@ -20,14 +21,16 @@ public class MeshTypes
             new Vector3[] { },
             new int[] { },
             new Vector3[] { },
+            new Vector2[] { },
             false
         );
 
-        public Mesh(Vector3[] v, int[] t, Vector3[] n, bool s)
+        public Mesh(Vector3[] v, int[] t, Vector3[] n, Vector2[] uv, bool s)
         {
             vertices = v;
             triangles = t;
             normals = n;
+            this.uv = uv;
             symmetry = s;
         }
 
@@ -35,6 +38,7 @@ public class MeshTypes
             g.Vertices(),
             g.Triangles(),
             g.Normals(),
+            g.UVs(),
             g.Symmetry
         ) { }
     }
@@ -57,6 +61,7 @@ public class MeshTypes
 
         public abstract Vector3 Vertex(int x, int y);
         public abstract Vector3 Normal(int x, int y);
+        public abstract Vector2 UV(int x, int y);
 
         public int[] Triangles()
         {
@@ -103,6 +108,19 @@ public class MeshTypes
                 }
             }
             return n;
+        }
+
+        public Vector2[] UVs()
+        {
+            Vector2[] uv = new Vector2[numVertices * numVertices];
+            for (int y = 0; y < numVertices; y++)
+            {
+                for (int x = 0; x < numVertices; x++)
+                {
+                    uv[y * numVertices + x] = UV(x, y);
+                }
+            }
+            return uv;
         }
     }
 

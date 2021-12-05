@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
+[RequireComponent(typeof(TexturePlacement))]
 public class EditableMesh : MonoBehaviour
 {
     // turns off half the faces to make the vertices easier to see
@@ -22,6 +23,9 @@ public class EditableMesh : MonoBehaviour
     private Controller[] controllers = new Controller[0];
     public bool visible;
 
+    private Matrix3x3 uvTransform = Matrix3x3.identity;
+    private Vector2[] originalUVs;
+
     // array to hold functions that subscribe to controllers' position updates
     // so that we can delete them when we delete the controller
     private Action<TransformNotifier.Transform>[] delegatesToDelete = new Action<TransformNotifier.Transform>[0];
@@ -34,7 +38,7 @@ public class EditableMesh : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
     }
 
-    private void SetMesh(Vector3[] vertices, int[] triangles, Vector3[] normals)
+    private void SetMesh(Vector3[] vertices, int[] triangles, Vector3[] normals, Vector2[] uv)
     {
         meshFilter.mesh.Clear();
         meshFilter.mesh.SetVertices(vertices);
@@ -49,13 +53,31 @@ public class EditableMesh : MonoBehaviour
         }
         meshFilter.mesh.SetTriangles(triangles, 0);
         meshFilter.mesh.SetNormals(normals);
+        originalUVs = uv;
+        UpdateUVs();
         UpdateControllers(vertices, normals);
+    }
+
+    public void UpdateTransform(Matrix3x3 transform)
+    {
+        uvTransform = transform;
+        UpdateUVs();
+    }
+
+    public void UpdateUVs()
+    {
+        Vector2[] uv = originalUVs;
+        for (int i = 0; i < uv.Length; i++)
+        {
+            uv[i] = uvTransform * uv[i];
+        }
+        meshFilter.mesh.SetUVs(0, uv);
     }
 
     public void SetMesh(MeshTypes.Mesh mesh)
     {
         symmetry = mesh.symmetry;
-        SetMesh(mesh.vertices, mesh.triangles, mesh.normals);
+        SetMesh(mesh.vertices, mesh.triangles, mesh.normals, mesh.uv);
     }
 
     public void ChangeSliders(SliderWithEcho.Values resolution, SliderWithEcho.Values size)
@@ -166,6 +188,14 @@ public class EditableMesh : MonoBehaviour
         UpdateControllerNormal(ogIndex, true);
 
         meshFilter.mesh.SetVertices(v);
+
+        // update all normals (setting them individually wasn't working!!)
+        Vector3[] n = new Vector3[controllers.Length];
+        for (int i = 0; i < n.Length; i++)
+        {
+            n[i] = controllers[i].Normal;
+        }
+        meshFilter.mesh.SetNormals(n);
     }
 
     // update the normals of all of this controller's neighbors
@@ -201,16 +231,8 @@ public class EditableMesh : MonoBehaviour
         UpdateControllerNormal(west, westCond);
         UpdateControllerNormal(northwest, northCond && westCond);
 
-        // second pass: now that all the controllers all have their new normals
-        // set, apply these changes to the mesh
-        UpdateMeshNormal(north, northCond);
-        UpdateMeshNormal(northeast, northCond && eastCond);
-        UpdateMeshNormal(east, eastCond);
-        UpdateMeshNormal(southeast, southCond && eastCond);
-        UpdateMeshNormal(south, southCond);
-        UpdateMeshNormal(southwest, southCond && westCond);
-        UpdateMeshNormal(west, westCond);
-        UpdateMeshNormal(northwest, northCond && westCond);
+        // second pass to be done AFTER this method is called for all controllers:
+        // now that they all have their new normals set, apply those changes to the mesh
     }
 
     // hacky symmetry thing, probably don't have time to make this
@@ -225,11 +247,9 @@ public class EditableMesh : MonoBehaviour
         bool northCond = index / resolution.value < resolution.value,
             southCond = index / resolution.value > 0;
 
+        // see comments in UpdateNeighbors()
         UpdateControllerNormal(north, northCond);
         UpdateControllerNormal(south, southCond);
-
-        UpdateMeshNormal(north, northCond);
-        UpdateMeshNormal(south, southCond);
     }
 
     // updates the normal of this individual controller,
@@ -257,7 +277,7 @@ public class EditableMesh : MonoBehaviour
             westCond = index % resolution.value > 0;
 
         // kelvin's code was a bit more efficient in that it didn't do all 6 calculations
-        // for every single vertex (instead it joined neighbors up) but this works hah
+        // for every single vertex (it joined neighbors up instead) but this works hah
         controllers[index].SetNormal(
             -(
                 GetFaceNormal(west, westCond, index, true, northwest, northCond && westCond) +
@@ -275,7 +295,7 @@ public class EditableMesh : MonoBehaviour
     }
 
     // gets the normal of the face defined by these three vertices
-    // condA condB condC are used to determine whether their corresponding
+    // and condA condB condC are used to determine whether their corresponding
     // vertex actually exists -- if it doesn't, then it makes do with whatever
     // vertices actually do exist
     private Vector3 GetFaceNormal(int a, bool condA, int b, bool condB, int c, bool condC)
@@ -300,14 +320,6 @@ public class EditableMesh : MonoBehaviour
         Vector3 posC = condC ? controllers[c].transform.localPosition : backup;
 
         return Vector3.Cross(posB - posA, posC - posA).normalized;
-    }
-
-    private void UpdateMeshNormal(int index, bool condition)
-    {
-        if (condition)
-        {
-            meshFilter.mesh.normals[index] = controllers[index].Normal;
-        }
     }
 
     //make the controllers visible and interactable

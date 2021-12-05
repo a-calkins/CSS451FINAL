@@ -562,9 +562,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a24c3546b83de84cb12a747d3a735d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  slider: {fileID: 0}
-  echo: {fileID: 0}
-  label: {fileID: 0}
+  min: 1
+  max: 10
+  initialValue: 5
+  truncate: 1
+  slider: {fileID: 114485966234177824}
+  echo: {fileID: 114699381412734440}
+  label: {fileID: 114696106814286312}
 --- !u!114 &6071830883874855882
 MonoBehaviour:
   m_ObjectHideFlags: 0
