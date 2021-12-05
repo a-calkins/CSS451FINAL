@@ -271,27 +271,32 @@ public class EditableMesh : MonoBehaviour
             southwest = south - 1,
             northwest = north - 1;
 
-        bool northCond = index / resolution.value < resolution.value,
-            eastCond = index % resolution.value < resolution.value - 1,
-            southCond = index / resolution.value > 0,
-            westCond = index % resolution.value > 0;
+        bool northCond = (north < controllers.Length) && north / resolution.value < resolution.value,
+            eastCond = (east < controllers.Length) && index % resolution.value < resolution.value - 1,
+            southCond = (west < controllers.Length) && index / resolution.value > 0,
+            westCond = (west < controllers.Length) && index % resolution.value > 0;
+
+        bool indexCond = index < controllers.Length;
 
         // kelvin's code was a bit more efficient in that it didn't do all 6 calculations
         // for every single vertex (it joined neighbors up instead) but this works hah
-        controllers[index].SetNormal(
-            -(
-                GetFaceNormal(west, westCond, index, true, northwest, northCond && westCond) +
-                GetFaceNormal(northwest, westCond, index, true, north, northCond) +
-                GetFaceNormal(index, true, east, eastCond, north, northCond) +
-                /* this is the northwesternmost face and it doesn't touch the center vertex */
-                // GetFaceNormal(north, northCond, east, eastCond, northeast, northCond && eastCond) +
-                /* this is the southeasternmost face and it doesn't touch the center vertex */
-                // GetFaceNormal(southwest, southCond && westCond, south, southCond, west, westCond) +
-                GetFaceNormal(west, westCond, south, southCond, index, true) +
-                GetFaceNormal(south, southCond, southeast, southCond && eastCond, index, true) +
-                GetFaceNormal(index, true, southeast, southCond && eastCond, east, eastCond)
-            ).normalized
-        );
+        if (indexCond)
+        {
+            controllers[index].SetNormal(
+                -(
+                    GetFaceNormal(west, westCond, index, indexCond, northwest, northCond && westCond) +
+                    GetFaceNormal(northwest, northCond && westCond, index, indexCond, north, northCond) +
+                    GetFaceNormal(index, indexCond, east, eastCond, north, northCond) +
+                    /* this is the northwesternmost face and it doesn't touch the center vertex */
+                    // GetFaceNormal(north, northCond, east, eastCond, northeast, northCond && eastCond) +
+                    /* this is the southeasternmost face and it doesn't touch the center vertex */
+                    // GetFaceNormal(southwest, southCond && westCond, south, southCond, west, westCond) +
+                    GetFaceNormal(west, westCond, south, southCond, index, indexCond) +
+                    GetFaceNormal(south, southCond, southeast, southCond && eastCond, index, indexCond) +
+                    GetFaceNormal(index, indexCond, southeast, southCond && eastCond, east, eastCond)
+                ).normalized
+            );
+        }
     }
 
     // gets the normal of the face defined by these three vertices
