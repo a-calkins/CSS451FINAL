@@ -41,7 +41,7 @@ public class SceneNode : MonoBehaviour
     private bool hasParent = false;
     private bool parentMoved = true;
 
-    private Vector2Int absolutePosition = Vector2Int.zero;
+    private Vector2 absolutePosition = Vector2.zero;
 
     const float kAxisFrameSize = 5f;
 
@@ -62,7 +62,7 @@ public class SceneNode : MonoBehaviour
         {
             foreach (SceneNode childNode in children)
             {
-                childNode.HasParent();
+                childNode.SetHasParent();
             }
         }
     }
@@ -72,12 +72,12 @@ public class SceneNode : MonoBehaviour
         // Debug.Log("PrimitiveList:" + PrimitiveList.Count);
 	}
 
-    private void HasParent()
+    private void SetHasParent()
     {
         hasParent = true;
     }
 
-    private void ParentMoved()
+    private void SetParentMoved()
     {
         parentMoved = true;
     }
@@ -95,7 +95,7 @@ public class SceneNode : MonoBehaviour
         }
         //Debug.Log(absoluteX + ", " + absoluteY);
 
-        if (!CheckCanMove(x, y))
+        if (!ObstacleAt(x, y))
         {
             /*
             (int newx, int newy) = direction switch
@@ -116,42 +116,43 @@ public class SceneNode : MonoBehaviour
             };
             */
             NodeOrigin = new Vector3(
-                NodeOrigin.x + x * moveBy / moveBy,
+                NodeOrigin.x + x * moveBy /*/ moveBy*/,
                 NodeOrigin.y,
-                NodeOrigin.z + y * moveBy / moveBy
+                NodeOrigin.z + y * moveBy /*/ moveBy*/
             );
             //Debug.Log(hasParent);
             parentMoved = false;
             foreach (SceneNode child in children)
             {
-                child.ParentMoved();
+                child.SetParentMoved();
             }
         }
     }
 
-    private bool CheckCanMove(int x, int y)
+    private bool ObstacleAt(int x, int y)
     {
-        int absoluteX = absolutePosition.x;
-        int absoluteY = absolutePosition.y;
-        int newX = absoluteX + x * moveBy;
-        int newY = absoluteY + y * moveBy;
+        float absoluteX = absolutePosition.x;
+        float absoluteY = absolutePosition.y;
+        float newX = absoluteX + x * moveBy;
+        float newY = absoluteY + y * moveBy;
 
+        
         // lol linear search
         foreach (GameObject obstacle in GameObject.FindGameObjectsWithTag(collisionTag))
         {
             if (
-                (Mathf.Abs(obstacle.transform.position.x - newX) < Mathf.Epsilon) &&
-                (Mathf.Abs(obstacle.transform.position.y - newY) < Mathf.Epsilon)
+                (Mathf.Abs(obstacle.transform.position.x - newX) < moveBy * .9) &&
+                (Mathf.Abs(obstacle.transform.position.z - newY) < moveBy * .9)
             )
             {
-                Debug.Log("obs " + (obstacle.transform.position.x, obstacle.transform.position.y));
                 return true;
             }
         }
+        
 
         foreach (SceneNode child in children)
         {
-            if (child.CheckCanMove(x, y))
+            if (child.ObstacleAt(x, y))
             {
                 return true;
             }
@@ -189,6 +190,7 @@ public class SceneNode : MonoBehaviour
 
         if (camera != null)
         {
+            //Debug.Log((absolutePosition, NodeOrigin));
             //Debug.Log("cam" + q.eulerAngles);
             camera.transform.localRotation = Quaternion.AngleAxis(cameraAngle, cameraAxis) * q;
             camera.transform.localPosition = cameraOrigin + snOrigin;
@@ -207,7 +209,7 @@ public class SceneNode : MonoBehaviour
         AxisFrame.transform.localScale = s * kAxisFrameSize;
         AxisFrame.transform.localRotation = q;
 
-        absolutePosition = new Vector2Int((int)snOrigin.x, (int)snOrigin.z);
+        absolutePosition = new Vector2(snOrigin.x, snOrigin.z);
 
         // propagate to all children
         foreach (SceneNode child in children)

@@ -17,8 +17,8 @@ TagManager:
   - 
   - Obstacles
   - Walls
-  - 
-  - 
+  - ObstacleMazeFloor
+  - WallMazeFloor
   - 
   - 
   - 
