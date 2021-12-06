@@ -46,6 +46,11 @@ public class SceneNode : MonoBehaviour
 
     const float kAxisFrameSize = 5f;
 
+    private int interpolationStepsLeft = 0;
+    private int interpolationStart = 0;
+    private int interpolationTarget = 0;
+    static int INTERPOLATION_STEPS = 50;
+
     void Awake()
     {
         UnSelect();
@@ -233,7 +238,7 @@ public class SceneNode : MonoBehaviour
 
         absolutePosition = new Vector2(snOrigin.x, snOrigin.z);
 
-        float angle = direction switch
+        int angle = direction switch
         {
             Direction.Up => 0,
             Direction.Right => 90,
@@ -242,16 +247,31 @@ public class SceneNode : MonoBehaviour
             _ => 0
         };
 
-        Quaternion angles = Quaternion.Euler(0, angle, 0);
+        if (angle != interpolationTarget)
+        {
+            interpolationTarget = angle;
+            interpolationStart = (int)camera.transform.localEulerAngles.y;
+            interpolationStepsLeft = INTERPOLATION_STEPS;
+        }
+
+        float interpolatedAngle = (
+            (interpolationTarget - interpolationStart) / (float)INTERPOLATION_STEPS
+        ) * (INTERPOLATION_STEPS - interpolationStepsLeft);
+        float angleToUse = interpolationStepsLeft > 0 ? interpolatedAngle : angle;
+        Quaternion angles = Quaternion.Euler(0, angleToUse, 0);
 
         q *= angles;
 
         if (camera != null)
         {
-
             Quaternion angleAxis = Quaternion.AngleAxis(cameraAngle, cameraAxis);
-            camera.transform.localRotation = Quaternion.Euler(angleAxis.eulerAngles.x, angle, angleAxis.eulerAngles.z);
+            camera.transform.localRotation = Quaternion.Euler(angleAxis.eulerAngles.x, angleToUse, angleAxis.eulerAngles.z);
             camera.transform.localPosition = RotatePointAroundPivot(cameraOrigin + snOrigin, snOrigin, angles);
+        }
+
+        if (interpolationStepsLeft > 0)
+        {
+            interpolationStepsLeft--;
         }
 
         AxisFrame.transform.localPosition = snOrigin;  // our location is Pivot 
