@@ -46,9 +46,14 @@ public class SceneNode : MonoBehaviour
 
     const float kAxisFrameSize = 5f;
 
-    private int interpolationStepsLeft = 0;
-    private int interpolationStart = 0;
-    private int interpolationTarget = 0;
+    private int rotInterpStepsLeft = 0;
+    private int rotInterpStart = 0;
+    private int rotInterpTarget = 0;
+
+    private int transInterpStepsLeft = 0;
+    private int transInterpStart = 0;
+    private int transInterpTarget = 0;
+
     static int INTERPOLATION_STEPS = 50;
 
     void Awake()
@@ -124,9 +129,9 @@ public class SceneNode : MonoBehaviour
             return;
         }
 
-        Direction d = TupleToDirection((x, y));
+        Direction rawDirection = TupleToDirection((x, y));
 
-        Direction relativeDirection = d switch
+        Direction relativeDirection = rawDirection switch
         {
             Direction.Up => direction,
             Direction.Left => (Direction)(((int)direction + 3) % 4),
@@ -145,9 +150,8 @@ public class SceneNode : MonoBehaviour
         };
 
         direction = relativeDirection;
-
-        if (!ObstacleAt(newx, newy))
-        {   
+        if (rawDirection == Direction.Up && !ObstacleAt(newx, newy))
+        {
             NodeOrigin = new Vector3(
                 NodeOrigin.x + newx * moveBy,
                 NodeOrigin.y,
@@ -243,21 +247,21 @@ public class SceneNode : MonoBehaviour
             Direction.Up => 0,
             Direction.Right => 90,
             Direction.Down => 180,
-            Direction.Left => 270,
+            Direction.Left => -90,
             _ => 0
         };
 
-        if (angle != interpolationTarget)
+        if (angle != rotInterpTarget)
         {
-            interpolationTarget = angle;
-            interpolationStart = (int)camera.transform.localEulerAngles.y;
-            interpolationStepsLeft = INTERPOLATION_STEPS;
+            rotInterpTarget = angle;
+            rotInterpStart = (int)camera.transform.localEulerAngles.y;
+            rotInterpStepsLeft = INTERPOLATION_STEPS;
         }
 
         float interpolatedAngle = (
-            (interpolationTarget - interpolationStart) / (float)INTERPOLATION_STEPS
-        ) * (INTERPOLATION_STEPS - interpolationStepsLeft);
-        float angleToUse = interpolationStepsLeft > 0 ? interpolatedAngle : angle;
+            (rotInterpTarget - rotInterpStart) / (float)INTERPOLATION_STEPS
+        ) * (INTERPOLATION_STEPS - rotInterpStepsLeft) + rotInterpStart;
+        float angleToUse = rotInterpStepsLeft > 0 ? interpolatedAngle : angle;
         Quaternion angles = Quaternion.Euler(0, angleToUse, 0);
 
         q *= angles;
@@ -269,9 +273,12 @@ public class SceneNode : MonoBehaviour
             camera.transform.localPosition = RotatePointAroundPivot(cameraOrigin + snOrigin, snOrigin, angles);
         }
 
-        if (interpolationStepsLeft > 0)
+        if (rotInterpStepsLeft > 0)
         {
-            interpolationStepsLeft--;
+            rotInterpStepsLeft--;
+        } else if (camera != null)
+        {
+            rotInterpStart = (int)camera.transform.localEulerAngles.y;
         }
 
         AxisFrame.transform.localPosition = snOrigin;  // our location is Pivot 
