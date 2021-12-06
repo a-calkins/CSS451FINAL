@@ -53,7 +53,7 @@ public class WorldManager : MonoBehaviour
             obj.UpdateTransform(
                 Matrix3x3Helpers.CreateTranslation(t.translation)
                 /* we could try to use rotation.x and rotation.y (i added those two params to CreateRotation) to do that 10pt extra credit thing where you rotate about a point */
-                // * Matrix3x3Helpers.CreateRotation(t.rotation.z, t.rotation.x, t.rotation.y)
+                * Matrix3x3Helpers.CreateRotation(t.rotation.z, t.rotation.x, t.rotation.y)
                 // * Matrix3x3Helpers.CreateScale(t.scale)
             );
         };
