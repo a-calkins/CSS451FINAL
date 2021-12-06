@@ -32,6 +32,7 @@ public class SceneNode : MonoBehaviour
 
     protected Matrix4x4 mCombinedParentXform;
     private Direction direction = Direction.Up;
+    private (int, int) upDirection = (0, 1);
     
     public Transform AxisFrame;
     public Vector3 NodeOrigin = Vector3.zero;
@@ -87,6 +88,30 @@ public class SceneNode : MonoBehaviour
         return upDownLeftRight[(int)c];
     }
 
+    static (int, int) DirectionToTuple(Direction d)
+    {
+        return d switch
+        {
+            Direction.Up => (0, 1),
+            Direction.Left => (-1, 0),
+            Direction.Down => (0, -1),
+            Direction.Right => (1, 0),
+            _ => (0, 0)
+        };
+    }
+
+    static Direction TupleToDirection((int, int) t)
+    {
+        return t switch
+        {
+            (0, 1) => Direction.Up,
+            (-1, 0) => Direction.Left,
+            (0, -1) => Direction.Down,
+            (1, 0) => Direction.Right,
+            _ => throw new System.Exception("bad direction " + t)
+        };
+    }
+
     public void Move(int x, int y)
     {
         if (hasParent && !parentMoved)
@@ -95,30 +120,36 @@ public class SceneNode : MonoBehaviour
         }
         //Debug.Log(absoluteX + ", " + absoluteY);
 
-        if (!ObstacleAt(x, y))
+        Direction d = TupleToDirection((x, y));
+
+        Direction relativeDirection = d switch
         {
-            /*
-            (int newx, int newy) = direction switch
-            {
-                Direction.Up => (x, y),
-                Direction.Down => (x, -y),
-                Direction.Right => (y, x),
-                Direction.Left => (y, -x),
-                _ => (x, y)
-            };
-            direction = (newx, newy) switch
-            {
-                (0, 1) => direction,
-                (0, -1) => (Direction)(((int)direction + 2) % 4),
-                (1, 0) => (Direction)(((int)direction + 1) % 4),
-                (-1, 0) => (Direction)(((int)direction - 1) % 4),
-                _ => direction
-            };
-            */
+            Direction.Up => direction,
+            Direction.Left => (Direction)(((int)direction + 3) % 4),
+            Direction.Down => (Direction)(((int)direction + 2) % 4),
+            Direction.Right => (Direction)(((int)direction + 1) % 4),
+            _ => direction
+        };
+
+        Debug.Log((direction, relativeDirection, d));
+
+        (int newx, int newy) = relativeDirection switch
+        {
+            Direction.Up => (0, 1),
+            Direction.Down => (0, -1),
+            Direction.Right => (1, 0),
+            Direction.Left => (-1, 0),
+            _ => (10, 10)
+        };
+
+        direction = relativeDirection;
+
+        if (!ObstacleAt(newx, newy))
+        {   
             NodeOrigin = new Vector3(
-                NodeOrigin.x + x * moveBy /*/ moveBy*/,
+                NodeOrigin.x + newx * moveBy /*/ moveBy*/,
                 NodeOrigin.y,
-                NodeOrigin.z + y * moveBy /*/ moveBy*/
+                NodeOrigin.z + newy * moveBy /*/ moveBy*/
             );
             //Debug.Log(hasParent);
             parentMoved = false;
@@ -168,9 +199,15 @@ public class SceneNode : MonoBehaviour
     {
         mCombinedParentXform = Matrix4x4.identity;
     }
+    static Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Quaternion angles) {
+        Vector3 dir = point - pivot; // get point direction relative to pivot
+        dir = angles * dir; // rotate it
+        point = dir + pivot; // calculate rotated point
+        return point; // return it
+     }
 
-    // tipPos: is the origin of this scene node
-    // topDir: is the y-direction of this node
+// tipPos: is the origin of this scene node
+// topDir: is the y-direction of this node
     public void CompositeTransform(ref Matrix4x4 parentXform, out Vector3 snOrigin, out Vector3 snUp)
     {
         Matrix4x4 orgT = Matrix4x4.Translate(NodeOrigin);
@@ -188,28 +225,31 @@ public class SceneNode : MonoBehaviour
         snOrigin = mCombinedParentXform.GetColumn(3);
         snUp = c1;
 
+        absolutePosition = new Vector2(snOrigin.x, snOrigin.z);
+
+        float angle = direction switch
+        {
+            Direction.Up => 0,
+            Direction.Right => 90,
+            Direction.Down => 180,
+            Direction.Left => 270,
+            _ => 0
+        };
+
+        Quaternion angles = Quaternion.Euler(0, angle, 0);
+
+        q *= angles;
+
         if (camera != null)
         {
-            //Debug.Log((absolutePosition, NodeOrigin));
-            //Debug.Log("cam" + q.eulerAngles);
-            camera.transform.localRotation = Quaternion.AngleAxis(cameraAngle, cameraAxis) * q;
-            camera.transform.localPosition = cameraOrigin + snOrigin;
+            Quaternion angleAxis = Quaternion.AngleAxis(cameraAngle, cameraAxis);
+            camera.transform.localRotation = Quaternion.Euler(angleAxis.eulerAngles.x, angle, angleAxis.eulerAngles.z);
+            camera.transform.localPosition = RotatePointAroundPivot(cameraOrigin + snOrigin, snOrigin, angles);
         }
-
-        q *= direction switch
-        {
-            Direction.Up => Quaternion.identity,
-            Direction.Right => Quaternion.Euler(0, 90, 0),
-            Direction.Down => Quaternion.Euler(0, 180, 0),
-            Direction.Left => Quaternion.Euler(0, 270, 0),
-            _ => Quaternion.identity
-        };
 
         AxisFrame.transform.localPosition = snOrigin;  // our location is Pivot 
         AxisFrame.transform.localScale = s * kAxisFrameSize;
         AxisFrame.transform.localRotation = q;
-
-        absolutePosition = new Vector2(snOrigin.x, snOrigin.z);
 
         // propagate to all children
         foreach (SceneNode child in children)

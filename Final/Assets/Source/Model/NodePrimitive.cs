@@ -48,7 +48,7 @@ public class NodePrimitive: MonoBehaviour {
             displayColor = MyColor;
         } else
         {
-            displayColor = new Color(0.1f, 0.1f, 0.1f);
+            displayColor = new Color(0.6f, 0.6f, 0.6f);
         }
     }
 	
