@@ -23,6 +23,7 @@ public class SceneNode : MonoBehaviour
         KeyCode.RightArrow
     };
     public string collisionTag;
+    public string interactableTag;
     public int moveBy = 2;
 
     public new Camera camera;
@@ -32,7 +33,6 @@ public class SceneNode : MonoBehaviour
 
     protected Matrix4x4 mCombinedParentXform;
     private Direction direction = Direction.Up;
-    private (int, int) upDirection = (0, 1);
     
     public Transform AxisFrame;
     public Vector3 NodeOrigin = Vector3.zero;
@@ -40,7 +40,7 @@ public class SceneNode : MonoBehaviour
     private List<SceneNode> children = new List<SceneNode>();
 
     private bool hasParent = false;
-    private bool parentMoved = true;
+    private bool parentMoved = true;  // this lets child scenenodes not move more than one step until their parent moves again
 
     private Vector2 absolutePosition = Vector2.zero;
 
@@ -118,7 +118,6 @@ public class SceneNode : MonoBehaviour
         {
             return;
         }
-        //Debug.Log(absoluteX + ", " + absoluteY);
 
         Direction d = TupleToDirection((x, y));
 
@@ -130,8 +129,6 @@ public class SceneNode : MonoBehaviour
             Direction.Right => (Direction)(((int)direction + 1) % 4),
             _ => direction
         };
-
-        Debug.Log((direction, relativeDirection, d));
 
         (int newx, int newy) = relativeDirection switch
         {
@@ -147,11 +144,10 @@ public class SceneNode : MonoBehaviour
         if (!ObstacleAt(newx, newy))
         {   
             NodeOrigin = new Vector3(
-                NodeOrigin.x + newx * moveBy /*/ moveBy*/,
+                NodeOrigin.x + newx * moveBy,
                 NodeOrigin.y,
-                NodeOrigin.z + newy * moveBy /*/ moveBy*/
+                NodeOrigin.z + newy * moveBy
             );
-            //Debug.Log(hasParent);
             parentMoved = false;
             foreach (SceneNode child in children)
             {
@@ -162,12 +158,19 @@ public class SceneNode : MonoBehaviour
 
     private bool ObstacleAt(int x, int y)
     {
+        foreach (SceneNode child in children)
+        {
+            if (child.ObstacleAt(x, y))
+            {
+                return true;
+            }
+        }
+
         float absoluteX = absolutePosition.x;
         float absoluteY = absolutePosition.y;
         float newX = absoluteX + x * moveBy;
         float newY = absoluteY + y * moveBy;
 
-        
         // lol linear search
         foreach (GameObject obstacle in GameObject.FindGameObjectsWithTag(collisionTag))
         {
@@ -179,13 +182,16 @@ public class SceneNode : MonoBehaviour
                 return true;
             }
         }
-        
 
-        foreach (SceneNode child in children)
+        foreach (GameObject obstacle in GameObject.FindGameObjectsWithTag(interactableTag))
         {
-            if (child.ObstacleAt(x, y))
+            if (
+                (Mathf.Abs(obstacle.transform.position.x - newX) < moveBy * .9) &&
+                (Mathf.Abs(obstacle.transform.position.z - newY) < moveBy * .9)
+            )
             {
-                return true;
+                obstacle.GetComponent<Interactable>().Interact();
+                return false;
             }
         }
 
@@ -206,8 +212,8 @@ public class SceneNode : MonoBehaviour
         return point; // return it
      }
 
-// tipPos: is the origin of this scene node
-// topDir: is the y-direction of this node
+    // tipPos: is the origin of this scene node
+    // topDir: is the y-direction of this node
     public void CompositeTransform(ref Matrix4x4 parentXform, out Vector3 snOrigin, out Vector3 snUp)
     {
         Matrix4x4 orgT = Matrix4x4.Translate(NodeOrigin);
@@ -242,6 +248,7 @@ public class SceneNode : MonoBehaviour
 
         if (camera != null)
         {
+
             Quaternion angleAxis = Quaternion.AngleAxis(cameraAngle, cameraAxis);
             camera.transform.localRotation = Quaternion.Euler(angleAxis.eulerAngles.x, angle, angleAxis.eulerAngles.z);
             camera.transform.localPosition = RotatePointAroundPivot(cameraOrigin + snOrigin, snOrigin, angles);
