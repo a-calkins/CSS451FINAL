@@ -150,7 +150,8 @@ public class SceneNode : MonoBehaviour
         };
 
         direction = relativeDirection;
-        if (rawDirection == Direction.Up && !ObstacleAt(newx, newy))
+        // camera == null is a hack to target the blue maze thingy!!! remove later
+        if ((camera == null || rawDirection == Direction.Up) && !ObstacleAt(newx, newy))
         {
             NodeOrigin = new Vector3(
                 NodeOrigin.x + newx * moveBy,
@@ -251,7 +252,7 @@ public class SceneNode : MonoBehaviour
             _ => 0
         };
 
-        if (angle != rotInterpTarget)
+        if (angle != rotInterpTarget && camera != null)
         {
             rotInterpTarget = angle;
             rotInterpStart = (int)camera.transform.localEulerAngles.y;
@@ -265,6 +266,8 @@ public class SceneNode : MonoBehaviour
         Quaternion angles = Quaternion.Euler(0, angleToUse, 0);
 
         q *= angles;
+
+        //mCombinedParentXform *= Matrix4x4.Rotate(angles);
 
         if (camera != null)
         {
