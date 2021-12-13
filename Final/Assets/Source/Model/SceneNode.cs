@@ -22,6 +22,7 @@ public class SceneNode : MonoBehaviour
         KeyCode.LeftArrow,
         KeyCode.RightArrow
     };
+    public bool rotateInPlace;
     public string collisionTag;
     public string interactableTag;
     public int moveBy = 2;
@@ -250,9 +251,23 @@ public class SceneNode : MonoBehaviour
         Quaternion angles = Quaternion.Euler(0, angleToUse, 0);
 
         Matrix4x4 orgT = Matrix4x4.Translate(NodeOrigin);
-        Matrix4x4 trs = Matrix4x4.TRS(transform.localPosition, transform.localRotation * angles, transform.localScale);
+        Matrix4x4 trs = Matrix4x4.TRS(
+            transform.localPosition,
+            transform.localRotation,
+            transform.localScale
+        );
 
         mCombinedParentXform = parentXform * orgT * trs;
+
+        if (rotateInPlace)
+        {
+            Quaternion parentRot = Quaternion.LookRotation(parentXform.GetColumn(2), parentXform.GetColumn(1));
+            Vector3 parentPos = mCombinedParentXform.GetColumn(3) - parentXform.GetColumn(3);
+            mCombinedParentXform *= Matrix4x4.Translate(parentPos).inverse * Matrix4x4.Rotate(angles) * Matrix4x4.Rotate(Quaternion.Inverse(parentRot)) * Matrix4x4.Translate(parentPos);
+        } else
+        {
+            mCombinedParentXform *= Matrix4x4.Rotate(angles);
+        }
         
         // let's decompose the combined matrix into R, and S
         Vector3 c0 = mCombinedParentXform.GetColumn(0);
@@ -290,7 +305,7 @@ public class SceneNode : MonoBehaviour
         {
             child.CompositeTransform(ref mCombinedParentXform, out snOrigin, out snUp);
         }
-        
+
         // disenminate to primitives
         foreach (NodePrimitive p in PrimitiveList)
         {
