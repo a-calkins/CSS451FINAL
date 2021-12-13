@@ -24,6 +24,7 @@ public class SceneNode : MonoBehaviour
     };
     public bool rotateInPlace;
     public bool visible;
+    public bool isKey;
     public string collisionTag;
     public string interactableTag;
     public int moveBy = 2;
@@ -247,6 +248,7 @@ public class SceneNode : MonoBehaviour
             }
         }
 
+        if (isKey)
         foreach (GameObject obstacle in GameObject.FindGameObjectsWithTag("Win"))
         {
             if (
@@ -254,9 +256,8 @@ public class SceneNode : MonoBehaviour
                 (Mathf.Abs(obstacle.transform.position.z - newY) < moveBy * .9)
             )
             {
-                visible = true;
-                obstacle.GetComponent<Renderer>().enabled = false;
-                return false;
+                Application.Quit();
+                UnityEditor.EditorApplication.isPlaying = false;
             }
         }
 
