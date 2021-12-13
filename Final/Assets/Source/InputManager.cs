@@ -43,4 +43,9 @@ public class InputManager : MonoBehaviour
             }
         }
     }
+
+    public void Win()
+    {
+
+    }
 }

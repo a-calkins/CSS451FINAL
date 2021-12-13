@@ -7,7 +7,7 @@ using System.Collections.Generic;
 [ExecuteInEditMode]
 public class SceneNode : MonoBehaviour
 {
-    private enum Direction
+    public enum Direction
     {
         Up,
         Right,
@@ -23,6 +23,7 @@ public class SceneNode : MonoBehaviour
         KeyCode.RightArrow
     };
     public bool rotateInPlace;
+    public bool visible;
     public string collisionTag;
     public string interactableTag;
     public int moveBy = 2;
@@ -34,6 +35,7 @@ public class SceneNode : MonoBehaviour
 
     protected Matrix4x4 mCombinedParentXform;
     private Direction direction = Direction.Up;
+    private Direction parentDirection = Direction.Up;
     
     public Transform AxisFrame;
     public Vector3 NodeOrigin = Vector3.zero;
@@ -79,10 +81,11 @@ public class SceneNode : MonoBehaviour
         }
     }
 
-	// Use this for initialization
-	protected void Start () {
+    // Use this for initialization
+    protected void Start()
+    {
         // Debug.Log("PrimitiveList:" + PrimitiveList.Count);
-	}
+    }
 
     private void SetHasParent()
     {
@@ -92,6 +95,10 @@ public class SceneNode : MonoBehaviour
     private void SetParentMoved()
     {
         parentMoved = true;
+        foreach (SceneNode child in children)
+        {
+            child.SetParentMoved();
+        }
     }
 
     public KeyCode GetControl(InputManager.Key c)
@@ -123,6 +130,18 @@ public class SceneNode : MonoBehaviour
         };
     }
 
+    static Direction RotateBy(Direction a, Direction b)
+    {
+        return b switch
+        {
+            Direction.Up => a,
+            Direction.Left => (Direction)(((int)a + 3) % 4),
+            Direction.Down => (Direction)(((int)a + 2) % 4),
+            Direction.Right => (Direction)(((int)a + 1) % 4),
+            _ => a
+        };
+    }
+
     public void Move(int x, int y)
     {
         if (hasParent && !parentMoved)
@@ -132,23 +151,10 @@ public class SceneNode : MonoBehaviour
 
         Direction rawDirection = TupleToDirection((x, y));
 
-        Direction relativeDirection = rawDirection switch
-        {
-            Direction.Up => direction,
-            Direction.Left => (Direction)(((int)direction + 3) % 4),
-            Direction.Down => (Direction)(((int)direction + 2) % 4),
-            Direction.Right => (Direction)(((int)direction + 1) % 4),
-            _ => direction
-        };
+        Direction relativeDirection = RotateBy(direction, rawDirection);
+        //relativeDirection = RotateBy(relativeDirection, parentDirection);
 
-        (int newx, int newy) = relativeDirection switch
-        {
-            Direction.Up => (0, 1),
-            Direction.Down => (0, -1),
-            Direction.Right => (1, 0),
-            Direction.Left => (-1, 0),
-            _ => (10, 10)
-        };
+        (int newx, int newy) = DirectionToTuple(relativeDirection);
 
         direction = relativeDirection;
         // camera == null is a hack to target the blue maze thingy!!! remove later
@@ -169,18 +175,33 @@ public class SceneNode : MonoBehaviour
 
     private bool ObstacleAt(int x, int y)
     {
-        foreach (SceneNode child in children)
-        {
-            if (child.ObstacleAt(x, y))
-            {
-                return true;
-            }
-        }
 
         float absoluteX = absolutePosition.x;
         float absoluteY = absolutePosition.y;
         float newX = absoluteX + x * moveBy;
         float newY = absoluteY + y * moveBy;
+
+        foreach (SceneNode child in children)
+        {
+            if (child.ObstacleAt(x, y))
+            {
+                // lol linear search
+                foreach (GameObject obstacle in GameObject.FindGameObjectsWithTag(collisionTag))
+                {
+                    if (
+                        (Mathf.Abs(obstacle.transform.position.x - newX) < moveBy * .9) &&
+                        (Mathf.Abs(obstacle.transform.position.z - newY) < moveBy * .9)
+                    )
+                    {
+                        foreach (NodePrimitive p in PrimitiveList)
+                        {
+                            p.FlashBlack();
+                        }
+                    }
+                }
+                return true;
+            }
+        }
 
         // lol linear search
         foreach (GameObject obstacle in GameObject.FindGameObjectsWithTag(collisionTag))
@@ -190,6 +211,10 @@ public class SceneNode : MonoBehaviour
                 (Mathf.Abs(obstacle.transform.position.z - newY) < moveBy * .9)
             )
             {
+                foreach (NodePrimitive p in PrimitiveList)
+                {
+                    p.FlashBlack();
+                }
                 return true;
             }
         }
@@ -202,6 +227,35 @@ public class SceneNode : MonoBehaviour
             )
             {
                 obstacle.GetComponent<Interactable>().Interact();
+                return false;
+            }
+        }
+
+        if (!visible)
+        {
+            foreach(GameObject obstacle in GameObject.FindGameObjectsWithTag("Key"))
+            {
+                if (
+                    (Mathf.Abs(obstacle.transform.position.x - newX) < moveBy * .9) &&
+                    (Mathf.Abs(obstacle.transform.position.z - newY) < moveBy * .9)
+                )
+                {
+                    visible = true;
+                    obstacle.GetComponent<Renderer>().enabled = false;
+                    return false;
+                }
+            }
+        }
+
+        foreach (GameObject obstacle in GameObject.FindGameObjectsWithTag("Win"))
+        {
+            if (
+                (Mathf.Abs(obstacle.transform.position.x - newX) < moveBy * .9) &&
+                (Mathf.Abs(obstacle.transform.position.z - newY) < moveBy * .9)
+            )
+            {
+                visible = true;
+                obstacle.GetComponent<Renderer>().enabled = false;
                 return false;
             }
         }
@@ -223,10 +277,13 @@ public class SceneNode : MonoBehaviour
         return point; // return it
      }
 
-    // tipPos: is the origin of this scene node
-    // topDir: is the y-direction of this node
-    public void CompositeTransform(ref Matrix4x4 parentXform, out Vector3 snOrigin, out Vector3 snUp)
+    // passing parentDirection is probably cheating but we can fix it after presentation
+    public void CompositeTransform(ref Matrix4x4 parentXform, out Vector3 snOrigin, out Vector3 snUp, Direction parentDirection = Direction.Up)
     {
+        if (parentDirection != this.parentDirection)
+        {
+            this.parentDirection = parentDirection;
+        }
 
         int angle = direction switch
         {
@@ -257,17 +314,31 @@ public class SceneNode : MonoBehaviour
             transform.localScale
         );
 
-        mCombinedParentXform = parentXform * orgT * trs;
-
         if (rotateInPlace)
         {
-            Quaternion parentRot = Quaternion.LookRotation(parentXform.GetColumn(2), parentXform.GetColumn(1));
-            Vector3 parentPos = mCombinedParentXform.GetColumn(3) - parentXform.GetColumn(3);
-            mCombinedParentXform *= Matrix4x4.Translate(parentPos).inverse * Matrix4x4.Rotate(angles) * Matrix4x4.Rotate(Quaternion.Inverse(parentRot)) * Matrix4x4.Translate(parentPos);
-        } else
-        {
-            mCombinedParentXform *= Matrix4x4.Rotate(angles);
+            Matrix4x4 parentSansRotation = parentXform;
+            Quaternion pq = Quaternion.identity;
+            if (rotateInPlace)
+            {
+                // let's decompose the parent matrix into T, R, and S
+                Vector3 pc0 = parentXform.GetColumn(0);
+                Vector3 pc1 = parentXform.GetColumn(1);
+                Vector3 pc2 = parentXform.GetColumn(2);
+                Vector3 ps = new Vector3(pc0.magnitude, pc1.magnitude, pc2.magnitude);
+                pq = Quaternion.LookRotation(pc2, pc1); // creates a rotation matrix with c2-Forward, c1-up
+                Vector3 pp = parentXform.GetColumn(3);
+
+                parentSansRotation = Matrix4x4.TRS(pp, Quaternion.identity, ps);
+            }
+            mCombinedParentXform = parentSansRotation * orgT * trs;
+            mCombinedParentXform *= Matrix4x4.Rotate(pq);
         }
+        else
+        {
+            mCombinedParentXform = parentXform * orgT * trs;
+        }
+
+        mCombinedParentXform *= Matrix4x4.Rotate(angles);
         
         // let's decompose the combined matrix into R, and S
         Vector3 c0 = mCombinedParentXform.GetColumn(0);
@@ -303,10 +374,11 @@ public class SceneNode : MonoBehaviour
         // propagate to all children
         foreach (SceneNode child in children)
         {
-            child.CompositeTransform(ref mCombinedParentXform, out snOrigin, out snUp);
+            child.CompositeTransform(ref mCombinedParentXform, out snOrigin, out snUp, direction);
         }
 
         // disenminate to primitives
+        if (visible)
         foreach (NodePrimitive p in PrimitiveList)
         {
             p.SetGrayscale(!hasParent || hasParent && parentMoved);

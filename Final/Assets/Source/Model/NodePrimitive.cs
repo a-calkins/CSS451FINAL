@@ -18,6 +18,9 @@ public class NodePrimitive: MonoBehaviour {
     private int mRotateDirection = 1;
     private float mCurrentAngle = 0f;
 
+    private int colorStepsLeft = 0;
+    private static readonly int COLOR_STEPS = 50;
+
     private new Renderer renderer;
 
 	// Use this for initialization
@@ -51,14 +54,30 @@ public class NodePrimitive: MonoBehaviour {
             displayColor = new Color(0.6f, 0.6f, 0.6f);
         }
     }
-	
-	public void LoadShaderMatrix(ref Matrix4x4 nodeMatrix)
+
+    public void FlashBlack()
+    {
+        //displayColor = new Color(0, 0, 0);
+        colorStepsLeft = COLOR_STEPS;
+    }
+
+    public void LoadShaderMatrix(ref Matrix4x4 nodeMatrix)
     {
         Matrix4x4 p = Matrix4x4.TRS(Pivot, Quaternion.identity, Vector3.one);
         Matrix4x4 invP = Matrix4x4.TRS(-Pivot, Quaternion.identity, Vector3.one);
         Matrix4x4 trs = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale);
         Matrix4x4 m = nodeMatrix * p * trs * invP;
         renderer.material.SetMatrix("MyTRSMatrix", m);
-        renderer.material.SetColor("MyColor", displayColor);
+
+        if (colorStepsLeft > 0)
+        {
+            renderer.material.SetColor("MyColor", new Color(
+                MyColor.r * (COLOR_STEPS - colorStepsLeft) / COLOR_STEPS,
+                MyColor.g * (COLOR_STEPS - colorStepsLeft) / COLOR_STEPS,
+                MyColor.b * (COLOR_STEPS - colorStepsLeft) / COLOR_STEPS
+            ));
+            colorStepsLeft--;
+        }
+        if (colorStepsLeft == 0) renderer.material.SetColor("MyColor", displayColor);
     }
 }
