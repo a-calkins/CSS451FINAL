@@ -42,7 +42,7 @@ public class SceneNode : MonoBehaviour
     private bool hasParent = false;
     private bool parentMoved = true;  // this lets child scenenodes not move more than one step until their parent moves again
 
-    private Vector2 absolutePosition = Vector2.zero;
+    public Vector2 absolutePosition { get; private set; } = Vector2.zero;
 
     const float kAxisFrameSize = 5f;
 
@@ -226,22 +226,6 @@ public class SceneNode : MonoBehaviour
     // topDir: is the y-direction of this node
     public void CompositeTransform(ref Matrix4x4 parentXform, out Vector3 snOrigin, out Vector3 snUp)
     {
-        Matrix4x4 orgT = Matrix4x4.Translate(NodeOrigin);
-        Matrix4x4 trs = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale);
-        
-        mCombinedParentXform = parentXform * orgT * trs;
-        
-        // let's decompose the combined matrix into R, and S
-        Vector3 c0 = mCombinedParentXform.GetColumn(0);
-        Vector3 c1 = mCombinedParentXform.GetColumn(1);
-        Vector3 c2 = mCombinedParentXform.GetColumn(2);
-        Vector3 s = new Vector3(c0.magnitude, c1.magnitude, c2.magnitude);
-        Quaternion q = Quaternion.LookRotation(c2, c1); // creates a rotation matrix with c2-Forward, c1-up
-
-        snOrigin = mCombinedParentXform.GetColumn(3);
-        snUp = c1;
-
-        absolutePosition = new Vector2(snOrigin.x, snOrigin.z);
 
         int angle = direction switch
         {
@@ -265,11 +249,24 @@ public class SceneNode : MonoBehaviour
         float angleToUse = rotInterpStepsLeft > 0 ? interpolatedAngle : angle;
         Quaternion angles = Quaternion.Euler(0, angleToUse, 0);
 
-        q *= angles;
+        Matrix4x4 orgT = Matrix4x4.Translate(NodeOrigin);
+        Matrix4x4 trs = Matrix4x4.TRS(transform.localPosition, transform.localRotation * angles, transform.localScale);
 
-        //mCombinedParentXform *= Matrix4x4.Rotate(angles);
+        mCombinedParentXform = parentXform * orgT * trs;
+        
+        // let's decompose the combined matrix into R, and S
+        Vector3 c0 = mCombinedParentXform.GetColumn(0);
+        Vector3 c1 = mCombinedParentXform.GetColumn(1);
+        Vector3 c2 = mCombinedParentXform.GetColumn(2);
+        Vector3 s = new Vector3(c0.magnitude, c1.magnitude, c2.magnitude);
+        Quaternion q = Quaternion.LookRotation(c2, c1); // creates a rotation matrix with c2-Forward, c1-up
 
-        if (camera != null)
+        snOrigin = mCombinedParentXform.GetColumn(3);
+        snUp = c1;
+
+        absolutePosition = new Vector2(snOrigin.x, snOrigin.z);
+
+        if (camera != null && transform.parent != null)
         {
             Quaternion angleAxis = Quaternion.AngleAxis(cameraAngle, cameraAxis);
             camera.transform.localRotation = Quaternion.Euler(angleAxis.eulerAngles.x, angleToUse, angleAxis.eulerAngles.z);
