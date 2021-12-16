@@ -23,6 +23,7 @@ public class SceneNode : MonoBehaviour
         KeyCode.RightArrow
     };
     public bool rotateInPlace;
+    public bool isFirstPerson;
     public bool visible;
     public bool isKey;
     public string collisionTag;
@@ -36,7 +37,7 @@ public class SceneNode : MonoBehaviour
 
     protected Matrix4x4 mCombinedParentXform;
     private Direction direction = Direction.Up;
-    private Direction parentDirection = Direction.Up;
+    private Direction referenceDirection = Direction.Up;  // parent's direction
     
     public Transform AxisFrame;
     public Vector3 NodeOrigin = Vector3.zero;
@@ -45,6 +46,9 @@ public class SceneNode : MonoBehaviour
 
     private bool hasParent = false;
     private bool parentMoved = true;  // this lets child scenenodes not move more than one step until their parent moves again
+    private bool movedSinceParent = false;
+
+    private float currentRotation;
 
     public Vector2 absolutePosition { get; private set; } = Vector2.zero;
 
@@ -58,7 +62,7 @@ public class SceneNode : MonoBehaviour
     private int transInterpStart = 0;
     private int transInterpTarget = 0;
 
-    static int INTERPOLATION_STEPS = 50;
+    static int INTERPOLATION_STEPS = 25;
 
     void Awake()
     {
@@ -96,6 +100,7 @@ public class SceneNode : MonoBehaviour
     private void SetParentMoved()
     {
         parentMoved = true;
+        movedSinceParent = false;
         foreach (SceneNode child in children)
         {
             child.SetParentMoved();
@@ -152,14 +157,21 @@ public class SceneNode : MonoBehaviour
 
         Direction rawDirection = TupleToDirection((x, y));
 
-        Direction relativeDirection = RotateBy(direction, rawDirection);
-        //relativeDirection = RotateBy(relativeDirection, parentDirection);
+        // this is a hack to target the blue thing because it has a different control style from the red one
+        if (isFirstPerson)
+        {
+            direction = RotateBy(direction, rawDirection);
+        }
+        else
+        {
+            direction = RotateBy(rawDirection, referenceDirection);
+            //direction = rawDirection;
+        }
 
-        (int newx, int newy) = DirectionToTuple(relativeDirection);
-
-        direction = relativeDirection;
+        (int newx, int newy) = DirectionToTuple(direction);
         // camera == null is a hack to target the blue maze thingy!!! remove later
-        if ((camera == null || rawDirection == Direction.Up) && !ObstacleAt(newx, newy))
+        // (it allows the blue one to move while turning but forces the red one to turn without moving)
+        if ((!isFirstPerson || rawDirection == Direction.Up) && !ObstacleAt(newx, newy))
         {
             NodeOrigin = new Vector3(
                 NodeOrigin.x + newx * moveBy,
@@ -171,7 +183,9 @@ public class SceneNode : MonoBehaviour
             {
                 child.SetParentMoved();
             }
+            movedSinceParent = true;
         }
+
     }
 
     private bool ObstacleAt(int x, int y)
@@ -256,9 +270,11 @@ public class SceneNode : MonoBehaviour
                 (Mathf.Abs(obstacle.transform.position.z - newY) < moveBy * .9)
             )
             {
+                #if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+                #endif
                 Application.Quit();
-                UnityEditor.EditorApplication.isPlaying = false;
-            }
+                }
         }
 
         return false;
@@ -281,12 +297,19 @@ public class SceneNode : MonoBehaviour
     // passing parentDirection is probably cheating but we can fix it after presentation
     public void CompositeTransform(ref Matrix4x4 parentXform, out Vector3 snOrigin, out Vector3 snUp, Direction parentDirection = Direction.Up)
     {
-        if (parentDirection != this.parentDirection)
+        if (parentDirection != referenceDirection)
         {
-            this.parentDirection = parentDirection;
+            referenceDirection = parentDirection;
+            movedSinceParent = false;
         }
 
-        int angle = direction switch
+        Direction directionToUse = direction;
+        if (!isFirstPerson && movedSinceParent)
+        {
+            directionToUse = RotateBy(direction, 4 - referenceDirection);
+        }
+
+        int angle = directionToUse switch
         {
             Direction.Up => 0,
             Direction.Right => 90,
@@ -295,10 +318,29 @@ public class SceneNode : MonoBehaviour
             _ => 0
         };
 
-        if (angle != rotInterpTarget && camera != null)
+        // all of this 180-wrangling stuff is to make it not turn 270 degrees the wrong way when it has to go
+        // from e.g. -90 to +180 or something like that
+        // code could be so much cleaner but not bothering :]
+        if (angle != rotInterpTarget && !(angle == 180 && rotInterpTarget == -180 || angle == -180 && rotInterpTarget == 180))
         {
             rotInterpTarget = angle;
-            rotInterpStart = (int)camera.transform.localEulerAngles.y;
+            rotInterpStart = (int)currentRotation;
+            if (rotInterpStart == -90 && rotInterpTarget == 180)
+            {
+                rotInterpTarget = -180;
+            }
+            if (rotInterpStart == 90 && rotInterpTarget == -180)
+            {
+                rotInterpTarget = 180;
+            }
+            if (rotInterpStart == 180 && rotInterpTarget == -90)
+            {
+                rotInterpStart = -180;
+            }
+            if (rotInterpStart == -180 && rotInterpTarget == 90)
+            {
+                rotInterpStart = 180;
+            }
             rotInterpStepsLeft = INTERPOLATION_STEPS;
         }
 
@@ -360,6 +402,8 @@ public class SceneNode : MonoBehaviour
             camera.transform.localPosition = RotatePointAroundPivot(cameraOrigin + snOrigin, snOrigin, angles);
         }
 
+        currentRotation = angleToUse;
+
         if (rotInterpStepsLeft > 0)
         {
             rotInterpStepsLeft--;
@@ -367,10 +411,6 @@ public class SceneNode : MonoBehaviour
         {
             rotInterpStart = (int)camera.transform.localEulerAngles.y;
         }
-
-        AxisFrame.transform.localPosition = snOrigin;  // our location is Pivot 
-        AxisFrame.transform.localScale = s * kAxisFrameSize;
-        AxisFrame.transform.localRotation = q;
 
         // propagate to all children
         foreach (SceneNode child in children)
